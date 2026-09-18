@@ -1,4 +1,4 @@
-# World Economic Data — African Economic & Trade Analytics Pipeline
+# African Economic & Trade Analytics Pipeline
 
 A data engineering portfolio project that ingests, models, and
 historizes economic indicators for 54 African countries from the World Bank's
