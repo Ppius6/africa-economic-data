@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: dim_indicator
+    description: One row per WDI indicator with a curated category grouping.
+    columns:
+      - name: indicator_code
+        tests:
+          - unique
+          - not_null
+      - name: category
+        tests:
+          - not_null:
+              config:
+                severity: warn
+  - name: fact_economic_indicator
+    description: One row per country-indicator-year observation, with the country's income classification as it stood at that time.
+    columns:
+      - name: country_code
+        tests:
+          - not_null
+      - name: indicator_code
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null

@@ -1,0 +1,12 @@
+world_economic_data:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: localhost
+      user: dev
+      password: dev
+      port: 5433
+      dbname: worldbank
+      schema: bronze
+      threads: 4

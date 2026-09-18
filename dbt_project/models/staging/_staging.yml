@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: stg_countries
+    description: One row per African country with flattened region, income level, and location metadata.
+    columns:
+      - name: country_code
+        tests:
+          - unique
+          - not_null
+      - name: region_code
+        tests:
+          - not_null
+      - name: income_level_code
+        tests:
+          - not_null
+
+  - name: stg_wdi_indicators
+    description: One row per country-indicator-year observation, unpivoted from raw WDI API response.
+    columns:
+      - name: country_code
+        tests:
+          - not_null
+      - name: indicator_code
+        tests:
+          - not_null
+      - name: year
+        tests:
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+            - country_code
+            - indicator_code
+            - year

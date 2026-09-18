@@ -1,0 +1,122 @@
+country_code,income_level_name,valid_from,valid_to
+AGO,Lower middle income,1988-07-01,1995-07-01
+AGO,Low income,1995-07-01,2004-07-01
+AGO,Lower middle income,2004-07-01,2011-07-01
+AGO,Upper middle income,2011-07-01,2016-07-01
+AGO,Lower middle income,2016-07-01,2026-09-18
+BDI,Low income,1987-07-01,2026-09-18
+BEN,Low income,1987-07-01,2019-07-01
+BEN,Lower middle income,2019-07-01,2026-09-18
+BFA,Low income,1987-07-01,2026-09-18
+BWA,Lower middle income,1987-07-01,1991-07-01
+BWA,Upper middle income,1991-07-01,1993-07-01
+BWA,Lower middle income,1993-07-01,1997-07-01
+BWA,Upper middle income,1997-07-01,2026-09-18
+CAF,Low income,1987-07-01,2026-09-18
+CIV,Lower middle income,1987-07-01,1993-07-01
+CIV,Low income,1993-07-01,2008-07-01
+CIV,Lower middle income,2008-07-01,2026-09-18
+CMR,Lower middle income,1987-07-01,1994-07-01
+CMR,Low income,1994-07-01,2005-07-01
+CMR,Lower middle income,2005-07-01,2026-09-18
+COD,Low income,1987-07-01,2026-09-18
+COG,Lower middle income,1987-07-01,1994-07-01
+COG,Low income,1994-07-01,2005-07-01
+COG,Lower middle income,2005-07-01,2026-09-18
+COM,Low income,1987-07-01,2018-07-01
+COM,Lower middle income,2018-07-01,2026-09-18
+CPV,Lower middle income,1988-07-01,2024-07-01
+CPV,Upper middle income,2024-07-01,2026-09-18
+DJI,Lower middle income,1990-07-01,2026-09-18
+DZA,Upper middle income,1987-07-01,1989-07-01
+DZA,Lower middle income,1989-07-01,2008-07-01
+DZA,Upper middle income,2008-07-01,2019-07-01
+DZA,Lower middle income,2019-07-01,2023-07-01
+DZA,Upper middle income,2023-07-01,2026-09-18
+EGY,Lower middle income,1987-07-01,1990-07-01
+EGY,Low income,1990-07-01,1995-07-01
+EGY,Lower middle income,1995-07-01,2026-09-18
+ERI,Low income,1992-07-01,2026-09-18
+ETH,Low income,1987-07-01,2026-09-18
+GAB,Upper middle income,1987-07-01,2026-09-18
+GHA,Low income,1987-07-01,2010-07-01
+GHA,Lower middle income,2010-07-01,2026-09-18
+GIN,Low income,1987-07-01,2022-07-01
+GIN,Lower middle income,2022-07-01,2026-09-18
+GMB,Low income,1987-07-01,2026-09-18
+GNB,Low income,1987-07-01,2026-09-18
+GNQ,Low income,1987-07-01,1997-07-01
+GNQ,Lower middle income,1997-07-01,2001-07-01
+GNQ,Low income,2001-07-01,2004-07-01
+GNQ,Upper middle income,2004-07-01,2007-07-01
+GNQ,High income,2007-07-01,2015-07-01
+GNQ,Upper middle income,2015-07-01,2026-09-18
+KEN,Low income,1987-07-01,2014-07-01
+KEN,Lower middle income,2014-07-01,2026-09-18
+LBR,Low income,1987-07-01,2026-09-18
+LBY,Upper middle income,1987-07-01,2026-09-18
+LSO,Low income,1987-07-01,1995-07-01
+LSO,Lower middle income,1995-07-01,1996-07-01
+LSO,Low income,1996-07-01,2005-07-01
+LSO,Lower middle income,2005-07-01,2026-09-18
+MAR,Lower middle income,1987-07-01,2026-09-18
+MDG,Low income,1987-07-01,2026-09-18
+MLI,Low income,1987-07-01,2026-09-18
+MOZ,Low income,1987-07-01,2026-09-18
+MRT,Low income,1987-07-01,2010-07-01
+MRT,Lower middle income,2010-07-01,2011-07-01
+MRT,Low income,2011-07-01,2012-07-01
+MRT,Lower middle income,2012-07-01,2026-09-18
+MUS,Lower middle income,1987-07-01,1992-07-01
+MUS,Upper middle income,1992-07-01,2019-07-01
+MUS,High income,2019-07-01,2020-07-01
+MUS,Upper middle income,2020-07-01,2026-09-18
+MWI,Low income,1987-07-01,2026-09-18
+NAM,Lower middle income,1989-07-01,2008-07-01
+NAM,Upper middle income,2008-07-01,2024-07-01
+NAM,Lower middle income,2024-07-01,2026-09-18
+NER,Low income,1987-07-01,2026-09-18
+NGA,Low income,1987-07-01,2008-07-01
+NGA,Lower middle income,2008-07-01,2026-09-18
+RWA,Low income,1987-07-01,2026-09-18
+SDN,Low income,1987-07-01,2007-07-01
+SDN,Lower middle income,2007-07-01,2019-07-01
+SDN,Low income,2019-07-01,2026-09-18
+SEN,Lower middle income,1987-07-01,1994-07-01
+SEN,Low income,1994-07-01,2009-07-01
+SEN,Lower middle income,2009-07-01,2015-07-01
+SEN,Low income,2015-07-01,2018-07-01
+SEN,Lower middle income,2018-07-01,2026-09-18
+SLE,Low income,1987-07-01,2026-09-18
+SOM,Low income,1987-07-01,2026-09-18
+SSD,Lower middle income,2011-07-01,2012-07-01
+SSD,Low income,2012-07-01,2013-07-01
+SSD,Lower middle income,2013-07-01,2014-07-01
+SSD,Low income,2014-07-01,2026-09-18
+STP,Low income,1987-07-01,2008-07-01
+STP,Lower middle income,2008-07-01,2026-09-18
+SWZ,Lower middle income,1987-07-01,2026-09-18
+SYC,Upper middle income,1987-07-01,2014-07-01
+SYC,High income,2014-07-01,2026-09-18
+TCD,Low income,1987-07-01,2026-09-18
+TGO,Low income,1987-07-01,2025-07-01
+TGO,Lower middle income,2025-07-01,2026-09-18
+TUN,Lower middle income,1987-07-01,2010-07-01
+TUN,Upper middle income,2010-07-01,2015-07-01
+TUN,Lower middle income,2015-07-01,2026-09-18
+TZA,Low income,1987-07-01,2019-07-01
+TZA,Lower middle income,2019-07-01,2026-09-18
+UGA,Low income,1987-07-01,2026-09-18
+ZAF,Lower middle income,1987-07-01,1988-07-01
+ZAF,Upper middle income,1988-07-01,1998-07-01
+ZAF,Lower middle income,1998-07-01,1999-07-01
+ZAF,Upper middle income,1999-07-01,2001-07-01
+ZAF,Lower middle income,2001-07-01,2004-07-01
+ZAF,Upper middle income,2004-07-01,2026-09-18
+ZMB,Low income,1987-07-01,2010-07-01
+ZMB,Lower middle income,2010-07-01,2021-07-01
+ZMB,Low income,2021-07-01,2022-07-01
+ZMB,Lower middle income,2022-07-01,2026-09-18
+ZWE,Lower middle income,1987-07-01,1991-07-01
+ZWE,Low income,1991-07-01,2018-07-01
+ZWE,Lower middle income,2018-07-01,2026-09-18
