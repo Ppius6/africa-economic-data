@@ -9,5 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
+# Environment variables
+.env
+
 # Dagster temporary directories
 .tmp_dagster_home*

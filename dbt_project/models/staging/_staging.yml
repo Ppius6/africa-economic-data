@@ -29,7 +29,8 @@ models:
           - not_null
     tests:
       - dbt_utils.unique_combination_of_columns:
-          combination_of_columns:
-            - country_code
-            - indicator_code
-            - year
+          arguments:
+            combination_of_columns:
+              - country_code
+              - indicator_code
+              - year

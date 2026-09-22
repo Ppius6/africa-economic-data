@@ -1,6 +1,14 @@
+{{ config(
+    materialized='table',
+    schema='gold',
+    engine='MergeTree()',
+    order_by=['indicator_code']
+) }}
+
+
 select 
     indicator_code,
     indicator_name,
     unit,
     category
-from {{ ref('stg_indicators') }}
+from {{ source('silver', 'stg_indicators') }}

@@ -1,10 +1,17 @@
+{{ config(
+    materialized='table',
+    schema='gold',
+    engine='MergeTree()',
+    order_by=['country_code', 'indicator_code', 'year']
+) }}
+
 with indicator_values as (
     select
         country_code,
         indicator_code,
         year,
         value
-    from {{ ref('stg_wdi_indicators') }}
+    from {{ source('silver', 'stg_wdi_indicators') }}
 ),
 
 -- Attach each observation to the country's income classification as it
@@ -20,10 +27,9 @@ country_as_of_year as (
         dc.region_name,
         dc.country_name
     from indicator_values iv
-    left join {{ ref('dim_country') }} dc
+    asof left join {{ ref('dim_country') }} dc
         on iv.country_code = dc.country_code
-        and make_date(iv.year, 1, 1) >= dc.valid_from
-        and make_date(iv.year, 1, 1) < dc.valid_to
+        and toDateTime64(makeDate(iv.year, 1, 1), 6) >= dc.valid_from
 )
 
 select

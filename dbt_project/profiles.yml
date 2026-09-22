@@ -4,9 +4,17 @@ world_economic_data:
     dev:
       type: postgres
       host: localhost
-      user: dev
-      password: dev
+      user: "{{ env_var('POSTGRES_USER') }}"
+      password: "{{ env_var('POSTGRES_PASSWORD') }}"
       port: 5433
       dbname: worldbank
       schema: bronze
+      threads: 4
+    clickhouse:
+      type: clickhouse
+      host: localhost
+      port: 8123
+      user: "{{ env_var('CLICKHOUSE_USER') }}"
+      password: "{{ env_var('CLICKHOUSE_PASSWORD') }}"
+      schema: gold
       threads: 4

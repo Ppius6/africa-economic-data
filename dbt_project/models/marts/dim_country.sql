@@ -1,10 +1,19 @@
+{{
+    config(
+        materialized='table', 
+        schema='gold', 
+        engine='MergeTree()',
+        order_by=['country_code', 'valid_from']
+        )
+}}
+
 with historical_income as (
     select
         country_code,
         income_level_name,
         valid_from::timestamp as valid_from,
         valid_to::timestamp as valid_to
-    from {{ ref('income_classification_history') }}
+    from {{ source('silver', 'income_classification_history') }}
 ),
 
 current_and_future_income as (
@@ -12,8 +21,8 @@ current_and_future_income as (
         country_code,
         income_level_name,
         dbt_valid_from as valid_from,
-        coalesce(dbt_valid_to, '9999-12-31'::timestamp) as valid_to
-    from {{ ref('dim_country_snapshot') }}
+        coalesce(dbt_valid_to, CAST('2299-12-31' AS DateTime64(6))) AS valid_to
+    from {{ source('silver', 'dim_country_snapshot') }}
 ),
 
 income_history as (
@@ -67,7 +76,7 @@ current_attributes as (
         capital_city,
         longitude,
         latitude
-    from {{ ref('stg_countries') }}
+    from {{ source('silver', 'stg_countries') }}
 )
 
 select
@@ -83,7 +92,7 @@ select
     a.latitude,
     c.valid_from,
     c.valid_to,
-    (c.valid_to = '9999-12-31'::timestamp) as is_current
+    (c.valid_to = CAST('2299-12-31' AS DateTime64(6))) as is_current
 from compacted c
 left join current_attributes a using (country_code)
 order by c.country_code, c.valid_from

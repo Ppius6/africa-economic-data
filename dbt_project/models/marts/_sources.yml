@@ -1,0 +1,11 @@
+version: 2
+
+sources:
+  - name: silver
+    schema: silver
+    tables:
+      - name: stg_countries
+      - name: stg_wdi_indicators
+      - name: stg_indicators
+      - name: dim_country_snapshot
+      - name: income_classification_history

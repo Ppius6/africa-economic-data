@@ -10,6 +10,7 @@ dependencies = [
     "dagster-postgres>=0.29.23",
     "dagster-project",
     "dagster-webserver>=1.13.23",
+    "dbt-clickhouse>=1.10.3",
     "dbt-postgres>=1.11.0",
     "pandas>=3.0.5",
     "requests>=2.34.2",
