@@ -11,7 +11,7 @@ with indicator_values as (
         indicator_code,
         year,
         value
-    from {{ source('silver', 'stg_wdi_indicators') }}
+    from {{ source('silver_bridge', 'stg_wdi_indicators') }}
 ),
 
 -- Attach each observation to the country's income classification as it

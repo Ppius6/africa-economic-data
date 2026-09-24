@@ -6,19 +6,29 @@ sources:
     tables:
       - name: country_raw
         description: Raw WDI country metadata, one row per country, landed as JSONB.
+        meta:
+          dagster:
+            asset_key: ["wdi_country_raw"]
         columns:
           - name: country_code
             tests:
               - not_null
       - name: wdi_raw
         description: Raw WDI indicator data, one row per record returned by the API, landed as JSONB.
+        meta:
+          dagster:
+            asset_key: ["wdi_wdi_raw"]
         columns:
           - name: indicator_code
             tests:
               - not_null
       - name: indicator_raw
         description: Raw WDI indicator metadata (name, unit, topic), one row per indicator.
+        meta:
+          dagster:
+            asset_key: ["wdi_indicator_raw"]
         columns:
           - name: indicator_code
             tests:
               - not_null
+                

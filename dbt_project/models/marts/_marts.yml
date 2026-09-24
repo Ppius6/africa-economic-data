@@ -25,3 +25,18 @@ models:
       - name: year
         tests:
           - not_null
+  - name: dim_country
+    description: One row per country per income-classification period (SCD2), carrying the country's descriptive attributes (name, region, lending type, location) alongside the income level that held during valid_from–valid_to. Use is_current to get each country's present state.
+    columns:
+      - name: country_code
+        tests: 
+          - not_null
+      - name: valid_from
+        tests: 
+          - not_null
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - country_code
+              - valid_from

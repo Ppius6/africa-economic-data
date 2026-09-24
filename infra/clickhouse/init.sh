@@ -2,10 +2,10 @@
 set -e
 
 clickhouse-client --query "CREATE DATABASE IF NOT EXISTS gold"
-clickhouse-client --query "CREATE DATABASE IF NOT EXISTS silver"
+clickhouse-client --query "CREATE DATABASE IF NOT EXISTS silver_bridge"
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver.stg_countries
+CREATE TABLE IF NOT EXISTS silver_bridge.stg_countries
 (
     country_code String,
     country_name String,
@@ -24,7 +24,7 @@ ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_countries', '${D
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver.stg_wdi_indicators
+CREATE TABLE IF NOT EXISTS silver_bridge.stg_wdi_indicators
 (
     country_code String,
     indicator_code String,
@@ -37,7 +37,7 @@ ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_wdi_indicators',
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver.dim_country_snapshot
+CREATE TABLE IF NOT EXISTS silver_bridge.dim_country_snapshot
 (
     country_code String,
     country_name String,
@@ -59,7 +59,7 @@ ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'dim_country_snapshot
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver.income_classification_history
+CREATE TABLE IF NOT EXISTS silver_bridge.income_classification_history
 (
     country_code String,
     income_level_name String,
@@ -70,7 +70,7 @@ ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'income_classificatio
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver.stg_indicators
+CREATE TABLE IF NOT EXISTS silver_bridge.stg_indicators
 (
     indicator_code String,
     indicator_name Nullable(String),

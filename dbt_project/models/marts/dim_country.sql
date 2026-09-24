@@ -13,7 +13,7 @@ with historical_income as (
         income_level_name,
         valid_from::timestamp as valid_from,
         valid_to::timestamp as valid_to
-    from {{ source('silver', 'income_classification_history') }}
+    from {{ source('silver_bridge', 'income_classification_history') }}
 ),
 
 current_and_future_income as (
@@ -22,7 +22,7 @@ current_and_future_income as (
         income_level_name,
         dbt_valid_from as valid_from,
         coalesce(dbt_valid_to, CAST('2299-12-31' AS DateTime64(6))) AS valid_to
-    from {{ source('silver', 'dim_country_snapshot') }}
+    from {{ source('silver_bridge', 'dim_country_snapshot') }}
 ),
 
 income_history as (
@@ -76,7 +76,7 @@ current_attributes as (
         capital_city,
         longitude,
         latitude
-    from {{ source('silver', 'stg_countries') }}
+    from {{ source('silver_bridge', 'stg_countries') }}
 )
 
 select

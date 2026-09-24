@@ -11,4 +11,4 @@ select
     indicator_name,
     unit,
     category
-from {{ source('silver', 'stg_indicators') }}
+from {{ source('silver_bridge', 'stg_indicators') }}

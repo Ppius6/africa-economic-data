@@ -1,8 +1,8 @@
 version: 2
 
 sources:
-  - name: silver
-    schema: silver
+  - name: silver_bridge
+    schema: silver_bridge
     tables:
       - name: stg_countries
       - name: stg_wdi_indicators

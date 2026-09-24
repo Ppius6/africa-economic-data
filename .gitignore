@@ -14,3 +14,7 @@ wheels/
 
 # Dagster temporary directories
 .tmp_dagster_home*
+
+# Logs
+logs/
+*.log
