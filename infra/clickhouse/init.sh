@@ -80,4 +80,19 @@ CREATE TABLE IF NOT EXISTS silver_bridge.stg_indicators
 ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_indicators', '${DB_USER}', '${DB_PASSWORD}', 'silver')
 "
 
+clickhouse-client --query "
+CREATE TABLE IF NOT EXISTS silver_bridge.fct_indicator_value_snapshot
+(
+    country_code String,
+    indicator_code String,
+    year Int32,
+    value Nullable(Float64),
+    dbt_scd_id String,
+    dbt_updated_at DateTime64(6),
+    dbt_valid_from DateTime64(6),
+    dbt_valid_to Nullable(DateTime64(6))
+)
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'fct_indicator_value_snapshot', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+"
+
 echo "ClickHouse init complete."

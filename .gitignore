@@ -18,3 +18,5 @@ wheels/
 # Logs
 logs/
 *.log
+
+notes.md

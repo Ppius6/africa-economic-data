@@ -9,3 +9,4 @@ sources:
       - name: stg_indicators
       - name: dim_country_snapshot
       - name: income_classification_history
+      - name: fct_indicator_value_snapshot
