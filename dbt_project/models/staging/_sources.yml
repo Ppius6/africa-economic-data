@@ -5,30 +5,44 @@ sources:
     schema: bronze
     tables:
       - name: country_raw
-        description: Raw WDI country metadata, one row per country, landed as JSONB.
+        description: Raw WDI country metadata, one row per country, landed as JSONB. Full-replace on every ingestion run.
         meta:
           dagster:
             asset_key: ["wdi_country_raw"]
         columns:
           - name: country_code
+            description: ISO3 country code.
             tests:
               - not_null
+          - name: raw_record
+            description: The complete, untouched WDI API response for this country. All parsing happens downstream in dbt, not here.
+          - name: ingested_at
+            description: Timestamp of the ingestion run that landed this row.
       - name: wdi_raw
-        description: Raw WDI indicator data, one row per record returned by the API, landed as JSONB.
+        description: Raw WDI indicator data, one row per record returned by the API, landed as JSONB. Full-replace per indicator on every ingestion run.
         meta:
           dagster:
             asset_key: ["wdi_wdi_raw"]
         columns:
           - name: indicator_code
+            description: WDI indicator code.
             tests:
               - not_null
+          - name: raw_record
+            description: The complete, untouched WDI API response for this observation. All parsing happens downstream in dbt, not here.
+          - name: ingested_at
+            description: Timestamp of the ingestion run that landed this row.
       - name: indicator_raw
-        description: Raw WDI indicator metadata (name, unit, topic), one row per indicator.
+        description: Raw WDI indicator metadata (name, unit, topic), one row per indicator. Full-replace on every ingestion run.
         meta:
           dagster:
             asset_key: ["wdi_indicator_raw"]
         columns:
           - name: indicator_code
+            description: WDI indicator code.
             tests:
               - not_null
-                
+          - name: raw_record
+            description: The complete, untouched WDI API response for this indicator. All parsing happens downstream in dbt, not here.
+          - name: ingested_at
+            description: Timestamp of the ingestion run that landed this row.

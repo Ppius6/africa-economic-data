@@ -1,0 +1,19 @@
+version: 2
+
+seeds:
+  - name: income_classification_history
+    description: >
+      Pre-cutover income-classification history (1987 through the live
+      snapshot's first-run date), sourced from Our World in Data's mirror
+      of the World Bank's own historical income classification dataset.
+      Closed date ranges throughout — dim_country_snapshot picks up
+      everything from the cutover date forward.
+    columns:
+      - name: country_code
+        description: ISO3 country code.
+      - name: income_level_name
+        description: WDI income bracket name that held during this row's validity window.
+      - name: valid_from
+        description: Start of the window during which income_level_name held true.
+      - name: valid_to
+        description: End of the window during which income_level_name held true. Always a closed, real date — no open/current row exists in this seed.

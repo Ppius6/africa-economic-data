@@ -2,7 +2,8 @@
     materialized='table',
     schema='gold',
     engine='MergeTree()',
-    order_by=['indicator_code']
+    order_by=['indicator_code'],
+    contract={'enforced': true}
 ) }}
 
 

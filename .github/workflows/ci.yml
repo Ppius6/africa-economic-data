@@ -1,0 +1,171 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  POSTGRES_USER: dev
+  POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+  POSTGRES_DB: worldbank
+  POSTGRES_HOST: localhost
+  CLICKHOUSE_USER: ci
+  CLICKHOUSE_PASSWORD: ${{ secrets.CI_CLICKHOUSE_PASSWORD }}
+
+jobs:
+  dbt-parse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --locked
+      - name: dbt deps
+        working-directory: dbt_project
+        run: uv run dbt deps
+      - name: dbt parse (validates refs, sources, Jinja, YAML schema)
+        working-directory: dbt_project
+        run: uv run dbt parse --profiles-dir . --target dev
+
+  # Builds the real bronze -> silver -> snapshot -> gold schema against
+  # ephemeral, empty Postgres/ClickHouse service containers (structure only,
+  # no real WDI data — ingestion never runs here) purely so dbt docs generate
+  # can produce an accurate catalog.json (real column names/types), then
+  # publishes the static docs site to GitHub Pages.
+  deploy-docs:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [dbt-parse]
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: worldbank
+          POSTGRES_USER: dev
+          POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd=pg_isready
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+      clickhouse:
+        image: clickhouse/clickhouse-server:latest
+        env:
+          CLICKHOUSE_USER: ci
+          CLICKHOUSE_PASSWORD: ${{ secrets.CI_CLICKHOUSE_PASSWORD }}
+        ports:
+          - 8123:8123
+          - 9000:9000
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --locked
+
+      - name: dbt deps
+        working-directory: dbt_project
+        run: uv run dbt deps
+
+      - name: Wait for ClickHouse
+        run: |
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8123/ping && exit 0
+            sleep 2
+          done
+          echo "ClickHouse did not become ready in time" >&2
+          exit 1
+
+      # Bronze tables must exist before dbt's staging views can be created
+      # (CREATE VIEW needs the underlying table to exist), but ingestion
+      # never runs here — no real WDI data lands in CI, just the correctly
+      # typed, empty tables ensure_bronze_table() already knows how to create.
+      - name: Create empty bronze tables
+        working-directory: ingestion
+        env:
+          PGPASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        run: |
+          uv run --project .. python -c "
+          import os
+          import psycopg2
+          from wdi_client import ensure_bronze_table
+          conn = psycopg2.connect(host='localhost', port=5433, user='dev', password=os.environ['PGPASSWORD'], dbname='worldbank')
+          ensure_bronze_table(conn)
+          conn.close()
+          "
+
+      - name: Install clickhouse-client
+        run: |
+          sudo apt-get install -y apt-transport-https ca-certificates gnupg
+          curl -fsSL 'https://packages.clickhouse.com/rpm/lts/repodata/repomd.xml.key' | sudo gpg --dearmor -o /usr/share/keyrings/clickhouse-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/clickhouse-keyring.gpg] https://packages.clickhouse.com/deb stable main" | sudo tee /etc/apt/sources.list.d/clickhouse.list
+          sudo apt-get update
+          sudo apt-get install -y clickhouse-client
+
+      # DB_HOST=postgres (the service name) resolves over the job's shared
+      # Docker network — that's what the ClickHouse *server* container sees.
+      # This runner step reaches the same service via localhost instead,
+      # which is why the two hostnames differ here.
+      - name: Set up ClickHouse databases and bridge tables
+        env:
+          DB_HOST: postgres
+          DB_PORT: "5432"
+          DB_NAME: worldbank
+          DB_USER: dev
+          DB_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+        run: bash infra/clickhouse/init.sh
+
+      - name: dbt build (bronze/silver, Postgres)
+        working-directory: dbt_project
+        run: uv run dbt build --profiles-dir . --target dev --exclude dim_country dim_indicator fact_economic_indicator
+
+      - name: dbt build (gold, ClickHouse)
+        working-directory: dbt_project
+        run: uv run dbt build --profiles-dir . --target gold_clickhouse --select dim_country dim_indicator fact_economic_indicator
+
+      # dbt docs generate only builds catalog.json (real column types) for
+      # whichever single target/adapter it's pointed at — a lone run misses
+      # half this project's models, since bronze/silver live in Postgres and
+      # gold lives in ClickHouse. Generate against both and merge the two
+      # catalogs so every model gets real column data in the published docs.
+      - name: dbt docs generate (Postgres layer)
+        working-directory: dbt_project
+        run: |
+          uv run dbt docs generate --profiles-dir . --target dev
+          cp target/catalog.json target/catalog_postgres.json
+
+      - name: dbt docs generate (ClickHouse layer) + merge catalogs
+        working-directory: dbt_project
+        run: |
+          uv run dbt docs generate --profiles-dir . --target gold_clickhouse
+          uv run python -c "
+          import json
+          pg = json.load(open('target/catalog_postgres.json'))
+          ch = json.load(open('target/catalog.json'))
+          pg['nodes'].update(ch['nodes'])
+          pg['sources'].update(ch['sources'])
+          pg['errors'] = (pg.get('errors') or []) + (ch.get('errors') or [])
+          json.dump(pg, open('target/catalog.json', 'w'))
+          "
+          rm target/catalog_postgres.json
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dbt_project/target
+      - uses: actions/deploy-pages@v4
+        id: deployment

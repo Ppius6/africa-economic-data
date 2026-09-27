@@ -1,0 +1,43 @@
+version: 2
+
+snapshots:
+  - name: dim_country_snapshot
+    description: >
+      SCD2 snapshot tracking each country's income-classification changes
+      from the day this snapshot first ran forward. check strategy on
+      income_level_code/income_level_name only — near-static fields like
+      capital city don't trigger a new row. Only covers history from its
+      own first-run date; income_classification_history (a seed) supplies
+      everything before that.
+    columns:
+      - name: country_code
+        description: ISO3 country code.
+      - name: income_level_code
+        description: WDI income bracket code as it stood during this row's validity window.
+      - name: income_level_name
+        description: WDI income bracket name as it stood during this row's validity window.
+      - name: dbt_valid_from
+        description: Start of this row's validity window.
+      - name: dbt_valid_to
+        description: End of this row's validity window. NULL means still open (the current believed state).
+
+  - name: fct_indicator_value_snapshot
+    description: >
+      SCD2 snapshot tracking every WDI indicator value's revision history,
+      keyed on country_code/indicator_code/year. check strategy on value
+      only. When the World Bank revises a figure, the old value's row
+      closes and a new row opens — nothing is ever overwritten in place.
+      fact_economic_indicator reads only the currently open row per key.
+    columns:
+      - name: country_code
+        description: ISO3 country code.
+      - name: indicator_code
+        description: WDI indicator code.
+      - name: year
+        description: The year this observation describes (not when it was observed — see dbt_valid_from for that).
+      - name: value
+        description: The value as believed true during this row's validity window.
+      - name: dbt_valid_from
+        description: Start of this row's validity window — i.e. when this value was first observed or last revised to.
+      - name: dbt_valid_to
+        description: End of this row's validity window. NULL means still open (the current believed value).

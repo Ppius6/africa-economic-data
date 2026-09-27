@@ -1,9 +1,10 @@
 {{
     config(
-        materialized='table', 
-        schema='gold', 
+        materialized='table',
+        schema='gold',
         engine='MergeTree()',
-        order_by=['country_code', 'valid_from']
+        order_by=['country_code', 'valid_from'],
+        contract={'enforced': true}
         )
 }}
 

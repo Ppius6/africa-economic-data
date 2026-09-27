@@ -3,37 +3,113 @@ version: 2
 models:
   - name: dim_indicator
     description: One row per WDI indicator with a curated category grouping.
+    config:
+      contract:
+        enforced: true
     columns:
       - name: indicator_code
+        data_type: String
+        description: WDI indicator code (e.g. NY.GDP.MKTP.CD). Join key to fact_economic_indicator.
         tests:
           - unique
           - not_null
+      - name: indicator_name
+        data_type: Nullable(String)
+        description: Human-readable indicator name.
+      - name: unit
+        data_type: Nullable(String)
+        description: Always NULL in the current data — WDI doesn't populate this field for any indicator in scope. Don't rely on it for display.
       - name: category
+        data_type: Nullable(String)
+        description: WDI's own topic grouping, sourced from the API's indicator metadata rather than hand-curated.
         tests:
           - not_null:
               config:
                 severity: warn
+
   - name: fact_economic_indicator
     description: One row per country-indicator-year observation, with the country's income classification as it stood at that time.
+    config:
+      contract:
+        enforced: true
     columns:
       - name: country_code
+        data_type: String
+        description: ISO3 country code. Join key to dim_country.
         tests:
           - not_null
+      - name: country_name
+        data_type: String
+        description: Denormalized from dim_country for convenience.
+      - name: region_name
+        data_type: String
+        description: Denormalized from dim_country for convenience.
       - name: indicator_code
+        data_type: String
+        description: Join key to dim_indicator.
         tests:
           - not_null
       - name: year
+        data_type: Int32
+        description: The year this observation describes.
         tests:
           - not_null
+      - name: value
+        data_type: Nullable(Float64)
+        description: The observed value. Frequently NULL for sparse indicators (GINI especially), since WDI coverage depends on irregular survey rounds.
+      - name: income_level_at_time
+        data_type: String
+        description: The country's income bracket as it stood in this observation's year, not its current bracket. Already resolved via a temporal join against dim_country.
+
   - name: dim_country
     description: One row per country per income-classification period (SCD2), carrying the country's descriptive attributes (name, region, lending type, location) alongside the income level that held during valid_from–valid_to. Use is_current to get each country's present state.
+    config:
+      contract:
+        enforced: true
     columns:
       - name: country_code
-        tests: 
+        data_type: String
+        description: ISO3 country code. Join key to fact_economic_indicator.
+        tests:
           - not_null
+      - name: country_name
+        data_type: String
+        description: Full country name.
+      - name: iso2_code
+        data_type: String
+        description: ISO2 country code.
+      - name: region_code
+        data_type: String
+        description: WDI region grouping code.
+      - name: region_name
+        data_type: String
+        description: WDI region grouping name — either Sub-Saharan Africa, or Middle East, North Africa, Afghanistan & Pakistan.
+      - name: income_level_name
+        data_type: String
+        description: Income bracket as it stood during this row's validity window, not necessarily the country's current bracket.
+      - name: lending_type
+        data_type: String
+        description: World Bank lending category.
+      - name: capital_city
+        data_type: Nullable(String)
+        description: Capital city name.
+      - name: longitude
+        data_type: Nullable(Float64)
+        description: Capital city longitude.
+      - name: latitude
+        data_type: Nullable(Float64)
+        description: Capital city latitude.
       - name: valid_from
-        tests: 
+        data_type: DateTime64(6)
+        description: Start of the window during which income_level_name held true.
+        tests:
           - not_null
+      - name: valid_to
+        data_type: DateTime64(6)
+        description: End of the window during which income_level_name held true. 2299-12-31 is a sentinel meaning "still true today," not a real future date.
+      - name: is_current
+        data_type: UInt8
+        description: 1 if this is the country's present-day classification, 0 for a historical row.
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:

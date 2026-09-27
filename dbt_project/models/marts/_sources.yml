@@ -3,10 +3,22 @@ version: 2
 sources:
   - name: silver_bridge
     schema: silver_bridge
+    description: >
+      Read-through tables in ClickHouse, each defined with the PostgreSQL
+      table engine. These store no data of their own — every query forwards
+      straight to the matching Postgres silver table, live, at read time.
+      Exists so gold marts can reference silver without dbt trying to ref()
+      across two adapters in one run.
     tables:
       - name: stg_countries
+        description: Bridge to Postgres silver.stg_countries.
       - name: stg_wdi_indicators
+        description: Bridge to Postgres silver.stg_wdi_indicators.
       - name: stg_indicators
+        description: Bridge to Postgres silver.stg_indicators.
       - name: dim_country_snapshot
+        description: Bridge to Postgres silver.dim_country_snapshot, the country income-classification SCD2 snapshot.
       - name: income_classification_history
+        description: Bridge to Postgres silver.income_classification_history, the pre-cutover income-classification seed.
       - name: fct_indicator_value_snapshot
+        description: Bridge to Postgres silver.fct_indicator_value_snapshot, the per-indicator value revision-history snapshot.
