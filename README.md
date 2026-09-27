@@ -14,6 +14,11 @@ See **Future directions** below for planned improvements and extensions.
 - **Orchestration**: Dagster + `dagster-dbt`, one asset graph spanning both adapters
 - **BI**: Power BI
 
+## Architecture
+
+![Project Architecture](WDI%20architecture@1x.png)
+
+
 ## Data scope
 
 54 African sovereign states, defined as a static, hardcoded ISO3 list rather
