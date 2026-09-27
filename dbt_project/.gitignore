@@ -4,6 +4,7 @@ dbt_packages/
 logs/
 .env
 
-# Local config and credentials
-profiles.yml
+# .user.yml can hold real per-developer config; profiles.yml is intentionally
+# tracked here — every credential in it is an env_var() reference, not a
+# real value, and CI/Dagster/anyone cloning the repo needs the file to exist.
 .user.yml
