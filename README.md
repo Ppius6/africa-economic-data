@@ -100,10 +100,28 @@ uv run dbt build --target gold_clickhouse --select dim_country dim_indicator fac
 cd ../dagster_project && uv run dagster dev -m dagster_project.definitions
 ```
 
+### Viewing the pipeline and triggering a run
+
+Once `dagster dev` is running, open `http://127.0.0.1:3000`.
+
+To see the whole pipeline, go to Overview → Assets. The flat list hides
+pure source nodes by default; switch to the graph view to see the full
+dependency chain from `wdi_bronze` through both dbt targets to the gold
+marts.
+
+To run the entire pipeline in one action, go to Overview → Jobs →
+`full_refresh`, then click Launch Run in the top right. This runs
+`wdi_bronze`, then the Postgres-side dbt build, then the ClickHouse-side dbt
+build, in that order. Dagster resolves the order from the dependency graph,
+so no manual sequencing is needed.
+
+To materialize a single asset (useful when testing one change): go to
+Overview → Assets, select the asset, and click Materialize selected.
+
 A weekly schedule (`full_refresh_schedule`, Mondays 6am) is defined in
-`dagster_project/dagster_project/schedules.py` and covers the whole pipeline
-in one job. It starts paused, so toggle it on from the Dagster UI once
-you've confirmed a manual run succeeds.
+`dagster_project/dagster_project/schedules.py` and runs the same
+`full_refresh` job. It starts paused, so go to Overview → Schedules and
+toggle it on once you've confirmed a manual run succeeds.
 
 ## Future directions
 
