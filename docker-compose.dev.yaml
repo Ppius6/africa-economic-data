@@ -1,0 +1,21 @@
+# Development overlay. Not loaded by a plain `docker compose up -d`.
+#
+#   docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up -d
+#
+# It mounts the Python source over the copy baked into the image, so editing
+# ingestion/ or dagster_project/ on the host takes effect without a rebuild.
+# Restart the two Dagster services to pick up a change:
+#   docker compose restart dagster-webserver dagster-daemon
+#
+# dbt_project/ is not mounted. Its parsed manifest and installed packages are
+# baked into the image, so dbt changes still need `up -d --build`.
+x-dev-mounts: &dev-mounts
+  volumes:
+    - ./ingestion:/app/ingestion
+    - ./dagster_project:/app/dagster_project
+
+services:
+  dagster-webserver:
+    <<: *dev-mounts
+  dagster-daemon:
+    <<: *dev-mounts

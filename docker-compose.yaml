@@ -1,0 +1,88 @@
+x-dagster: &dagster
+  build: .
+  image: world-economic-data-app
+  restart: on-failure
+  env_file: .env
+  environment:
+    DAGSTER_HOME: /opt/dagster/home
+    INGESTION_DB_HOST: postgres
+    INGESTION_DB_PORT: "5432"
+    CLICKHOUSE_HOST: clickhouse
+    CLICKHOUSE_PORT: "8123"
+  volumes:
+    - dagster_home:/opt/dagster/home
+    - ./infra/dagster/dagster.yaml:/opt/dagster/home/dagster.yaml:ro
+  depends_on:
+    postgres:
+      condition: service_healthy
+    clickhouse:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB} 
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init-dagster-db.sh:/docker-entrypoint-initdb.d/10-dagster-db.sh:ro
+    healthcheck:
+      # Connects over TCP to the dagster database itself. During first-run init
+      # Postgres only listens on a socket, and the dagster database may not
+      # exist yet, so pg_isready would report healthy too early.
+      test: ["CMD-SHELL", "psql -h 127.0.0.1 -U ${POSTGRES_USER} -d dagster -tAc 'select 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.9
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - chdata:/var/lib/clickhouse
+      - ./infra/clickhouse/init.sh:/docker-entrypoint-initdb.d/init.sh
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8123/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dagster-webserver:
+    <<: *dagster
+    command: dagster-webserver -h 0.0.0.0 -p 3100 -m dagster_project.definitions
+    ports:
+      - "${DAGSTER_PORT:-3100}:3100"
+  
+  dagster-daemon:
+    <<: *dagster
+    command: dagster-daemon run -m dagster_project.definitions
+    # Both Dagster services mount dagster.yaml into the same fresh named volume.
+    # Started at the same moment they can collide creating that mountpoint
+    # ("file exists"), so the daemon starts after the webserver. This list
+    # replaces the anchor's, which is why it repeats the two databases.
+    depends_on:
+      postgres: {condition: service_healthy}
+      clickhouse: {condition: service_healthy}
+      dagster-webserver: {condition: service_started}
+
+volumes:
+  pgdata:
+  chdata:
+  dagster_home:

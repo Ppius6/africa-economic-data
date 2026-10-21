@@ -1,0 +1,12 @@
+storage:
+  postgres:
+    postgres_db:
+      username:
+        env: POSTGRES_USER
+      password:
+        env: POSTGRES_PASSWORD
+      hostname:
+        env: INGESTION_DB_HOST
+      db_name: dagster
+      port:
+        env: INGESTION_DB_PORT

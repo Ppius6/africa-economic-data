@@ -3,17 +3,17 @@ world_economic_data:
   outputs:
     dev:
       type: postgres
-      host: localhost
+      host: "{{ env_var('INGESTION_DB_HOST', 'localhost') }}"
       user: "{{ env_var('POSTGRES_USER') }}"
       password: "{{ env_var('POSTGRES_PASSWORD') }}"
-      port: 5433
-      dbname: worldbank
+      port: "{{ env_var('INGESTION_DB_PORT', '5433') | as_number }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'worldbank') }}"
       schema: bronze
       threads: 4
     gold_clickhouse:
       type: clickhouse
-      host: localhost
-      port: 8123
+      host: "{{ env_var('CLICKHOUSE_HOST', 'localhost') }}"
+      port: "{{ env_var('CLICKHOUSE_PORT', '8123') | as_number }}"
       user: "{{ env_var('CLICKHOUSE_USER') }}"
       password: "{{ env_var('CLICKHOUSE_PASSWORD') }}"
       schema: gold

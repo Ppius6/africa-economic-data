@@ -76,7 +76,7 @@ def clickhouse_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
 
 # WDI Ingestion
 sys.path.insert(0, str(Path(__file__).parent.joinpath("../../ingestion").resolve()))
-from wdi_client import run as run_wdi_ingestion # noqa: E402
+from wdi.pipeline import run as run_wdi_ingestion # noqa: E402
 
 @multi_asset(
     outs={

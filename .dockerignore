@@ -1,0 +1,16 @@
+.git
+.github
+.vscode
+.venv
+.env
+**/__pycache__
+**/.tmp_dagster_home*
+**/target
+**/dbt_packages
+**/logs
+*.log
+*.png
+notes.md
+architecture-notes.md
+docker-compose.yaml
+Dockerfile*

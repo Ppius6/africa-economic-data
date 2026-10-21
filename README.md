@@ -30,8 +30,7 @@ column types fails the build rather than silently drifting.
 
 ## Data scope
 
-54 African sovereign states, defined as a static, hardcoded ISO3 list rather
-than derived from WDI's own region field. WDI has reclassified countries
+There are 54 African sovereign states, defined as a static, hardcoded ISO3 list rather than derived from WDI's own region field. WDI has reclassified countries
 between its Sub-Saharan Africa and Middle East/North Africa groupings before,
 and a fixed list avoids depending on that.
 
@@ -83,11 +82,32 @@ warehouses; ClickHouse just queries Postgres live whenever gold gets rebuilt.
 ## Running locally
 
 ```bash
-docker compose up -d          # starts both Postgres and ClickHouse
-cp .env.example .env          # fill in real credentials
+cp .env.example .env          # fill in real credentials first, Compose reads it
+docker compose up -d          # starts Postgres, ClickHouse and Dagster
+```
 
+That is the whole setup. The first run builds the application image, which
+takes a few minutes. After that, open the Dagster UI at
+`http://localhost:3100` (set `DAGSTER_PORT` in `.env` to use another port).
+Compose starts the databases first and waits until they report healthy before
+it starts the two Dagster services, the webserver and the daemon. Dagster keeps
+its own run history in a separate `dagster` database in the same Postgres
+instance. Data lives in named volumes, so `docker compose down` keeps it and
+`docker compose down -v` deletes it.
+
+After you change Python or dbt code, rebuild the image with
+`docker compose up -d --build`, because the code is copied into the image
+rather than mounted.
+
+### Running the steps by hand
+
+If you would rather run each layer yourself, for example while developing, the
+same pipeline works from your own machine against the two database
+containers. Run `uv sync` once first.
+
+```bash
 # ingestion must run first, since bronze has to exist before anything reads it
-cd ingestion && uv run python wdi_client.py
+cd ingestion && uv run python -m wdi.pipeline
 
 # bronze/silver: staging views, the seed, and both snapshots, all in Postgres
 cd ../dbt_project
@@ -100,9 +120,14 @@ uv run dbt build --target gold_clickhouse --select dim_country dim_indicator fac
 cd ../dagster_project && uv run dagster dev -m dagster_project.definitions
 ```
 
+Running `dagster dev` keeps its state in a local folder, separate from the
+containerized Dagster. Use one or the other, because a schedule you turn on in
+one of them does not exist in the other.
+
 ### Viewing the pipeline and triggering a run
 
-Once `dagster dev` is running, open `http://127.0.0.1:3000`.
+With Docker, open `http://localhost:3100`. With a local `dagster dev`, open
+`http://127.0.0.1:3000`.
 
 To see the whole pipeline, go to Overview → Assets. The flat list hides
 pure source nodes by default; switch to the graph view to see the full

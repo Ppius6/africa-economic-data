@@ -31,6 +31,25 @@ jobs:
         working-directory: dbt_project
         run: uv run dbt parse --profiles-dir . --target dev
 
+  # Builds the application image the same way `docker compose up` does, so a
+  # broken Dockerfile or compose file fails here instead of on someone's laptop.
+  # The build also runs `dbt parse`, which catches a project that cannot load.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Validate the compose file
+        run: |
+          cp .env.example .env
+          docker compose config -q
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   # Builds the real bronze -> silver -> snapshot -> gold schema against
   # ephemeral, empty Postgres/ClickHouse service containers (structure only,
   # no real WDI data — ingestion never runs here) purely so dbt docs generate
@@ -65,7 +84,7 @@ jobs:
           --health-timeout=5s
           --health-retries=5
       clickhouse:
-        image: clickhouse/clickhouse-server:latest
+        image: clickhouse/clickhouse-server:26.9
         env:
           CLICKHOUSE_USER: ci
           CLICKHOUSE_PASSWORD: ${{ secrets.CI_CLICKHOUSE_PASSWORD }}
@@ -102,7 +121,7 @@ jobs:
           uv run --project .. python -c "
           import os
           import psycopg2
-          from wdi_client import ensure_bronze_table
+          from wdi.loader import ensure_bronze_table
           conn = psycopg2.connect(host='localhost', port=5433, user='dev', password=os.environ['PGPASSWORD'], dbname='worldbank')
           ensure_bronze_table(conn)
           conn.close()
