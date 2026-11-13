@@ -1,4 +1,8 @@
-"""Country scope shared by every ingestion source."""
+"""Country scope and year range shared by every ingestion source."""
+
+# First year requested. There is no end year: requests run to the current year,
+# so newly published years arrive without a config change.
+START_YEAR = 1990
 
 AFRICA_ISO3 = {
     "DZA", "AGO", "BEN", "BWA", "BFA", "BDI", "CPV", "CMR", "CAF", "TCD",
