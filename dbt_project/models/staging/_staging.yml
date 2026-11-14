@@ -3,6 +3,10 @@ version: 2
 models:
   - name: stg_countries
     description: One row per African country with flattened region, income level, and location metadata, unpacked from bronze's raw JSONB.
+    config:
+      meta:
+        dagster:
+          group: wdi
     columns:
       - name: country_code
         description: ISO3 country code.
@@ -38,6 +42,10 @@ models:
 
   - name: stg_indicators
     description: One row per WDI indicator with a curated category grouping, unpacked from bronze's raw JSONB.
+    config:
+      meta:
+        dagster:
+          group: wdi
     columns:
       - name: indicator_code
         description: WDI indicator code.
@@ -53,6 +61,10 @@ models:
 
   - name: stg_wdi_indicators
     description: One row per country-indicator-year observation, unpivoted from raw WDI API response.
+    config:
+      meta:
+        dagster:
+          group: wdi
     columns:
       - name: country_code
         description: ISO3 country code.
@@ -79,3 +91,100 @@ models:
               - country_code
               - indicator_code
               - year
+
+  - name: stg_comtrade_areas
+    description: >
+      One row per Comtrade area code (M49), mapped to ISO3 where it is a country, with its type and
+      whether it is in the pipeline's scope. Several codes can map to one ISO3 (Ethiopia 230/231,
+      Sudan 736/729); each code only carries data for the years it was valid.
+    config:
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: m49_code
+        description: Comtrade's M49 area code.
+        tests:
+          - unique
+          - not_null
+      - name: area_name
+        description: Comtrade's name for the area, including its validity note, e.g. 'Sudan (...2011)'.
+      - name: area_type
+        description: >
+          'country'; 'world' (code 0, a reporter's total); 'customs_union' (711, Southern African Customs
+          Union, reporting for ZAF, BWA, LSO, NAM and SWZ until 1999); 'group' (regional aggregates);
+          'other_area' (non-country codes such as 'Areas, nes', 'Bunkers', 'Free Zones').
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['country', 'world', 'customs_union', 'group', 'other_area']
+      - name: iso3
+        description: ISO3 code for countries; NULL for every other area type.
+      - name: is_in_scope
+        description: True for the 54 African countries (matched on stg_countries) and for the customs union.
+        tests:
+          - not_null
+      - name: valid_from
+        description: First date Comtrade uses this code.
+      - name: valid_to
+        description: Last date Comtrade uses this code; NULL while still in use.
+
+  - name: stg_comtrade_trade
+    description: >
+      One row per reporter x partner x flow x year (HS TOTAL), flattened from bronze. Records that
+      came back from both pulls are kept once.
+    config:
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: year
+        tests:
+          - not_null
+      - name: reporter_m49
+        description: Reporting area's M49 code.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_comtrade_areas')
+                field: m49_code
+      - name: partner_m49
+        description: Partner area's M49 code. 0 means World (the reporter's total).
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_comtrade_areas')
+                field: m49_code
+      - name: flow_code
+        description: X = exports, M = imports, as stated by the reporter.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['X', 'M']
+      - name: trade_value_usd
+        description: Comtrade's primary value in US$. Exports are FOB; imports are usually CIF.
+        tests:
+          - not_null
+      - name: cif_value_usd
+        description: Value including freight and insurance, where reported.
+      - name: fob_value_usd
+        description: Value at the exporter's border, where reported.
+      - name: net_weight_kg
+        description: Net weight in kilograms, where reported.
+      - name: hs_edition
+        description: Edition of the HS product codes the reporter used (H0 = 1992 ... H6 = 2022).
+      - name: is_reported
+        description: Comtrade's isReported flag, kept as delivered; meaning not yet confirmed against Comtrade's documentation.
+      - name: legacy_estimation_flag
+        description: Comtrade's legacyEstimationFlag, kept as delivered; meaning not yet confirmed.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - year
+              - reporter_m49
+              - partner_m49
+              - flow_code

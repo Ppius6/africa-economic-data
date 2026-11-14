@@ -19,5 +19,4 @@ wheels/
 logs/
 *.log
 
-notes.md
-architecture-notes.md
+docs/

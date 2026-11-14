@@ -6,10 +6,13 @@ models:
     config:
       contract:
         enforced: true
+      meta:
+        dagster:
+          group: wdi
     columns:
       - name: indicator_code
         data_type: String
-        description: WDI indicator code (e.g. NY.GDP.MKTP.CD). Join key to fact_economic_indicator.
+        description: WDI indicator code (e.g. NY.GDP.MKTP.CD). Join key to fct_economic_indicator.
         tests:
           - unique
           - not_null
@@ -27,11 +30,14 @@ models:
               config:
                 severity: warn
 
-  - name: fact_economic_indicator
+  - name: fct_economic_indicator
     description: One row per country-indicator-year observation, with the country's income classification as it stood at that time.
     config:
       contract:
         enforced: true
+      meta:
+        dagster:
+          group: wdi
     columns:
       - name: country_code
         data_type: String
@@ -66,10 +72,13 @@ models:
     config:
       contract:
         enforced: true
+      meta:
+        dagster:
+          group: wdi
     columns:
       - name: country_code
         data_type: String
-        description: ISO3 country code. Join key to fact_economic_indicator.
+        description: ISO3 country code. Join key to fct_economic_indicator.
         tests:
           - not_null
       - name: country_name
@@ -116,3 +125,124 @@ models:
             combination_of_columns:
               - country_code
               - valid_from
+  
+  - name: dim_trade_area
+    description: One row per Comtrade area code (M49). Role-playing dimension for fct_bilateral_trade's exporter and importer.
+    config:
+      contract:
+        enforced: true
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: m49_code
+        data_type: Int32
+        description: Comtrade M49 code. Join key from fct_bilateral_trade.exporter_m49 and importer_m49.
+        tests: [unique, not_null]
+      - name: area_name
+        data_type: LowCardinality(String)
+      - name: area_type
+        data_type: LowCardinality(String)
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['country', 'world', 'customs_union', 'group', 'other_area']
+      - name: iso3
+        data_type: LowCardinality(Nullable(String))
+        description: ISO3 for countries; NULL for other areas.
+      - name: is_in_scope
+        data_type: Bool
+      - name: valid_from
+        data_type: Nullable(Date32)
+      - name: valid_to
+        data_type: Nullable(Date32)
+      - name: member_iso3
+        data_type: Array(LowCardinality(String))
+        description: Countries the area stands for.
+
+  - name: bridge_area_country
+    description: Area to country. One row per country an area stands for (711 has five; Sudan's two codes share SDN).
+    config:
+      contract:
+        enforced: true
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: m49_code
+        data_type: Int32
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_trade_area')
+                field: m49_code
+      - name: iso3
+        data_type: LowCardinality(String)
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_country')
+                field: country_code
+              config:
+                where: "is_in_scope"
+      - name: is_shared_area
+        data_type: Bool
+        description: True when the area's trade is shared between several countries (the customs union).
+      - name: is_in_scope
+        data_type: Bool
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [m49_code, iso3]
+
+  - name: fct_bilateral_trade
+    description: One row per year x exporter x importer with both ends' reported trade values. No figure is preferred yet.
+    config:
+      contract:
+        enforced: true
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: year
+        data_type: Int32
+        tests: [not_null]
+      - name: exporter_m49
+        data_type: Int32
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_trade_area')
+                field: m49_code
+      - name: importer_m49
+        data_type: Int32
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_trade_area')
+                field: m49_code
+      - name: exporter_reported_usd
+        data_type: Nullable(Float64)
+        description: Exports as the exporter reported them (FOB, US$). NULL if the exporter did not report this flow.
+      - name: importer_reported_usd
+        data_type: Nullable(Float64)
+        description: Imports as the importer reported them (usually CIF, US$). NULL if the importer did not report this flow.
+      - name: importer_value_basis
+        data_type: LowCardinality(Nullable(String))
+      - name: reported_by
+        data_type: LowCardinality(String)
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['both', 'exporter_only', 'importer_only']
+      - name: is_intra_african
+        data_type: Bool
+      - name: exporter_hs_edition
+        data_type: LowCardinality(Nullable(String))
+      - name: importer_hs_edition
+        data_type: LowCardinality(Nullable(String))
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [year, exporter_m49, importer_m49]

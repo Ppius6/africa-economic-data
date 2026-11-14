@@ -32,6 +32,55 @@ sources:
             description: The complete, untouched WDI API response for this observation. All parsing happens downstream in dbt, not here.
           - name: ingested_at
             description: Timestamp of the ingestion run that landed this row.
+      - name: comtrade_raw
+        description: >
+          Raw UN Comtrade annual trade records (HS TOTAL, aggregate rows only), landed as JSONB.
+          Two pulls per year, told apart by query_side. Replaced per (query_side, period) slice.
+        meta:
+          dagster:
+            asset_key: ["comtrade_trade_raw"]
+        columns:
+          - name: query_side
+            description: >
+              'reporter' for the in-scope countries' own reports against every partner;
+              'partner' for every country's reports about the in-scope countries.
+              A record between two in-scope areas appears once in each.
+            tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['reporter', 'partner']
+          - name: period
+            description: Year of the trade.
+            tests:
+              - not_null
+          - name: raw_record
+            description: The complete, untouched Comtrade API record. All parsing happens downstream in dbt.
+          - name: ingested_at
+            description: Timestamp of the ingestion run that landed this row.
+      - name: comtrade_reporters_raw
+        description: Comtrade's reporter reference (M49 code, ISO3, validity dates), one row per reporter code. Full-replace on every run.
+        meta:
+          dagster:
+            asset_key: ["comtrade_reporters_raw"]
+        columns:
+          - name: reporter_code
+            description: M49 reporter code.
+            tests:
+              - not_null
+      - name: comtrade_partner_areas_raw
+        description: >
+          Comtrade's partner-area reference, one row per code. A superset of the reporters: it also has
+          areas that never report, such as 'Areas, nes' (899) and 'Bunkers' (837). Full-replace on every run.
+        meta:
+          dagster:
+            asset_key: ["comtrade_partner_areas_raw"]
+        columns:
+          - name: partner_code
+            description: M49 area code.
+            tests:
+              - unique
+              - not_null
       - name: indicator_raw
         description: Raw WDI indicator metadata (name, unit, topic), one row per indicator. Full-replace on every ingestion run.
         meta:

@@ -122,8 +122,10 @@ jobs:
           import os
           import psycopg2
           from wdi.loader import ensure_bronze_table
+          from comtrade.loader import ensure_bronze_tables as ensure_comtrade_bronze_tables
           conn = psycopg2.connect(host='localhost', port=5433, user='dev', password=os.environ['PGPASSWORD'], dbname='worldbank')
           ensure_bronze_table(conn)
+          ensure_comtrade_bronze_tables(conn)
           conn.close()
           "
 
@@ -150,11 +152,11 @@ jobs:
 
       - name: dbt build (bronze/silver, Postgres)
         working-directory: dbt_project
-        run: uv run dbt build --profiles-dir . --target dev --exclude dim_country dim_indicator fact_economic_indicator
+        run: uv run dbt build --profiles-dir . --target dev --select tag:silver
 
       - name: dbt build (gold, ClickHouse)
         working-directory: dbt_project
-        run: uv run dbt build --profiles-dir . --target gold_clickhouse --select dim_country dim_indicator fact_economic_indicator
+        run: uv run dbt build --profiles-dir . --target gold_clickhouse --select tag:gold
 
       # dbt docs generate only builds catalog.json (real column types) for
       # whichever single target/adapter it's pointed at — a lone run misses

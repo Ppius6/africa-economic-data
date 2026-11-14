@@ -1,16 +1,22 @@
 from dagster import Definitions, load_assets_from_modules
 from dagster_dbt import DbtCliResource
 
-from dagster_project import assets  # noqa: TID252
+from dagster_project import wdi_assets, comtrade_assets  # noqa: TID252
 
-from .assets import dbt_project
-from .schedules import weekly_schedule
+from .wdi_assets import dbt_project
+from .schedules import wdi_weekly_schedule, comtrade_weekly_schedule
 
-all_assets = load_assets_from_modules([assets])
+from .jobs import wdi_refresh_job, comtrade_refresh_job
+
+all_assets = load_assets_from_modules([
+    wdi_assets,
+    comtrade_assets
+])
 
 defs = Definitions(
     assets=all_assets,
-    schedules=[weekly_schedule],
+    jobs=[wdi_refresh_job, comtrade_refresh_job],
+    schedules=[wdi_weekly_schedule, comtrade_weekly_schedule],
     resources={
         "dbt": DbtCliResource(project_dir=dbt_project),
     },

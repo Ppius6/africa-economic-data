@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: int_comtrade_bilateral_flows
+    description: >
+      One row per year x exporter x importer with both ends' reported figures side by side:
+      the exporter's reported exports and the importer's reported imports for the same flow.
+      Either may be missing. No figure is preferred here; that choice belongs to a later model.
+      Every pair has at least one in-scope end, because ingestion only pulls flows touching the 54 countries.
+    config:
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: year
+        tests:
+          - not_null
+      - name: exporter_m49
+        tests:
+          - not_null
+      - name: exporter_iso3
+        description: NULL when the exporter is not a country (World is excluded; see area_type).
+      - name: exporter_area_type
+        description: Area type from stg_comtrade_areas.
+      - name: exporter_in_scope
+      - name: importer_m49
+        tests:
+          - not_null
+      - name: importer_iso3
+      - name: importer_area_type
+      - name: importer_in_scope
+      - name: exporter_reported_usd
+        description: Exports as reported by the exporter (FOB, US$). NULL if the exporter didn't report this flow.
+      - name: importer_reported_usd
+        description: Imports as reported by the importer (usually CIF, US$). NULL if the importer didn't report this flow.
+      - name: importer_value_basis
+        description: "'CIF' or 'FOB': which valuation the importer's figure uses. NULL when it matches neither stated value."
+      - name: reported_by
+        description: "'both', 'exporter_only' or 'importer_only'."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['both', 'exporter_only', 'importer_only']
+      - name: is_intra_african
+        description: True when both ends are in scope.
+      - name: exporter_hs_edition
+      - name: importer_hs_edition
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - year
+              - exporter_m49
+              - importer_m49
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "exporter_in_scope or importer_in_scope"

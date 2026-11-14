@@ -95,4 +95,44 @@ CREATE TABLE IF NOT EXISTS silver_bridge.fct_indicator_value_snapshot
 ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'fct_indicator_value_snapshot', '${DB_USER}', '${DB_PASSWORD}', 'silver')
 "
 
+clickhouse-client --query "
+CREATE TABLE IF NOT EXISTS silver_bridge.stg_comtrade_areas
+(
+    m49_code Int32,
+    area_name String,
+    area_type String,
+    iso3 Nullable(String),
+    is_in_scope Bool,
+    valid_from Nullable(Date32),
+    valid_to Nullable(Date32),
+    ingested_at DateTime64(6)
+)
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_comtrade_areas', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+"
+
+clickhouse-client --query "
+CREATE TABLE IF NOT EXISTS silver_bridge.int_comtrade_bilateral_flows
+(
+    year Int32,
+    exporter_m49 Int32,
+    exporter_iso3 Nullable(String),
+    exporter_name String,
+    exporter_area_type String,
+    exporter_in_scope Bool,
+    importer_m49 Int32,
+    importer_iso3 Nullable(String),
+    importer_name String,
+    importer_area_type String,
+    importer_in_scope Bool,
+    exporter_reported_usd Nullable(Float64),
+    importer_reported_usd Nullable(Float64),
+    importer_value_basis Nullable(String),
+    reported_by String,
+    is_intra_african Bool,
+    exporter_hs_edition Nullable(String),
+    importer_hs_edition Nullable(String)
+)
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'int_comtrade_bilateral_flows', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+"
+
 echo "ClickHouse init complete."

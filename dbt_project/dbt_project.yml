@@ -35,10 +35,21 @@ models:
     staging:
       +materialized: view
       +schema: silver
+      +tags: ['silver']
+    intermediate:
+      +materialized: table
+      +schema: silver
+      +tags: ['silver']
     marts:
       +materialized: table 
       +schema: gold
+      +tags: ['gold']
 
 seeds:
   dbt_project:
     +schema: silver
+    +tags: ['silver']
+
+snapshots:
+  dbt_project:
+    +tags: ['silver']

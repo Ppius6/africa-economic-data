@@ -22,3 +22,7 @@ sources:
         description: Bridge to Postgres silver.income_classification_history, the pre-cutover income-classification seed.
       - name: fct_indicator_value_snapshot
         description: Bridge to Postgres silver.fct_indicator_value_snapshot, the per-indicator value revision-history snapshot.
+      - name: stg_comtrade_areas
+        description: Bridge to Postgres silver.stg_comtrade_areas, one row per Comtrade area code (M49) with type, ISO3 and scope.
+      - name: int_comtrade_bilateral_flows
+        description: Bridge to Postgres silver.int_comtrade_bilateral_flows, both ends' reported figures per year x exporter x importer.
