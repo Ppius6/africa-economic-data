@@ -3,8 +3,11 @@ import pytest
 from datetime import date
 from comtrade.pipeline import REFRESH_WINDOW_YEARS, default_years
 
-from comtrade.client import fetch_trade, m49_codes_for
+from comtrade.client import fetch_trade, m49_codes_for, RecordCapError, fetch_in_batches, hs_chapters
 from comtrade.loader import IncompleteLoadError, check_slice_size
+
+from comtrade.product_pipeline import PRODUCT_START_YEAR
+from comtrade.product_pipeline import default_years as product_default_years
 
 REPORTERS = [
     {"reporterCode": 230, "reporterCodeIsoAlpha3": "ETH",
@@ -63,3 +66,40 @@ def test_default_years_never_starts_before_start_year():
     from config import START_YEAR
     early = date(START_YEAR + 2, 1, 1)
     assert default_years(early).start == START_YEAR
+
+
+def test_hs_chapters_keeps_two_digit_codes_including_99():
+    reference = [
+        {"id": "TOTAL", "aggrLevel": 0},
+        {"id": "01", "aggrLevel": 2},
+        {"id": "0101", "aggrLevel": 4},
+        {"id": "99", "aggrLevel": 2},
+    ]
+    assert hs_chapters(reference) == ["01", "99"]
+
+
+def test_capped_batches_are_halved_until_they_fit(monkeypatch):
+    monkeypatch.setattr("comtrade.client.time.sleep", lambda seconds: None)
+
+    def fetch_batch(batch):
+        if len(batch) > 2:
+            raise RecordCapError("too big")
+        return list(batch)
+
+    assert sorted(fetch_in_batches(
+        fetch_batch, list(range(10)), 5)) == list(range(10))
+
+
+def test_single_item_over_cap_is_raised(monkeypatch):
+    monkeypatch.setattr("comtrade.client.time.sleep", lambda seconds: None)
+
+    def fetch_batch(batch):
+        raise RecordCapError("too big")
+
+    with pytest.raises(RecordCapError):
+        fetch_in_batches(fetch_batch, ["01", "02"], 2)
+
+
+def test_product_years_never_start_before_2000():
+    assert product_default_years(date(2003, 6, 1)).start == PRODUCT_START_YEAR
+    assert product_default_years(date(2026, 11, 15)) == range(2021, 2026)

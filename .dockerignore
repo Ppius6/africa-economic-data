@@ -12,5 +12,6 @@
 *.png
 notes.md
 architecture-notes.md
+visual-data-notes.md
 docker-compose.yaml
 Dockerfile*

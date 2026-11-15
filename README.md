@@ -19,7 +19,7 @@ The architecture uses PostgreSQL for the bronze and silver layers and ClickHouse
 
 ## Architecture
 
-![Project Architecture](WDI%20architecture@1x.png)
+![Project Architecture](architecture.png)
 
 ## Documentation
 
@@ -105,7 +105,6 @@ After changing anything, run `docker compose up -d --build`.
 
 ## Future directions
 
-- **Choosing between exporter and importer figures** for each Comtrade flow. Since 2015, exporters report about 25–30% more intra-African trade than importers do, the opposite of what CIF/FOB valuation predicts, so the gap needs investigating before picking a rule.
 - **Trade by product** (HS chapters) instead of totals only.
 - **Africa Visa Openness Index**, which needs semi-manual extraction from PDF reports.
 - **African transport network** (roads, air routes), modeled as an edge-list fact table.

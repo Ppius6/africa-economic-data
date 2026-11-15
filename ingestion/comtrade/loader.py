@@ -1,4 +1,4 @@
-"""Bronze landing for Comtrade: writes raw records to Postgres."""
+"""This module lands raw Comtrade records and reference files in the Postgres bronze schema."""
 
 from datetime import datetime, timezone
 import json
@@ -21,7 +21,10 @@ class IncompleteLoadError(Exception):
 
 
 def check_slice_size(label: str, new_count: int, previous_count: int) -> None:
-    """Only refuses when there is something to protect: a first load of zero rows is allowed."""
+    """Raises IncompleteLoadError when a refreshed slice would shrink what is already in bronze.
+
+    The check only refuses when there is something to protect, so a first load of zero rows is allowed.
+    """
     if previous_count and new_count == 0:
         raise IncompleteLoadError(
             f"{label}: API returned 0 records; keeping the {previous_count} rows already in bronze"
@@ -53,12 +56,27 @@ def ensure_bronze_tables(conn):
                 raw_record JSONB NOT NULL,
                 ingested_at TIMESTAMPTZ NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS bronze.comtrade_product_raw (
+                query_side TEXT NOT NULL,
+                period INTEGER NOT NULL,
+                raw_record JSONB NOT NULL,
+                ingested_at TIMESTAMPTZ NOT NULL  
+            );
+            CREATE INDEX IF NOT EXISTS comtrade_product_raw_slice_idx ON bronze.comtrade_product_raw (query_side, period);
+            CREATE TABLE IF NOT EXISTS bronze.comtrade_hs_raw (
+                cmd_code TEXT NOT NULL,
+                raw_record JSONB NOT NULL,
+                ingested_at TIMESTAMPTZ NOT NULL  
+            );
         """)
     conn.commit()
 
 
 def _replace_reference(conn, label: str, table: str, code_column: str, code_field: str, records: list[dict]):
-    """Swap a whole reference table in one transaction. Table and column names are constants, never input."""
+    """Replaces a whole reference table in one transaction.
+
+    The table and column names always come from constants in this module, never from input.
+    """
     ingested_at = datetime.now(timezone.utc)
     with conn.cursor() as cur:
         cur.execute(f"SELECT count(*) FROM {table}")
@@ -84,21 +102,41 @@ def land_partner_areas(conn, records: list[dict]):
                        "partner_code", "PartnerCode", records)
 
 
-def land_trade(conn, query_side: str, period: int, records: list[dict]):
-    """Replace one (query_side, period) slice in a single transaction."""
+def _replace_slice(conn, table: str, query_side: str, period: int, records: list[dict]):
+    """Replaces one (query_side, period) slice of a trade table in a single transaction.
+
+    The table name always comes from a constant in the land_* functions below, never from input.
+    """
     ingested_at = datetime.now(timezone.utc)
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT count(*) FROM bronze.comtrade_raw WHERE query_side = %s AND period = %s",
+            f"SELECT count(*) FROM {table} WHERE query_side = %s AND period = %s",
             (query_side, period),
         )
-        check_slice_size(f"{query_side} {period}", len(records), cur.fetchone()[0])
+        check_slice_size(f"{table} {query_side} {period}",
+                         len(records), cur.fetchone()[0])
 
-        cur.execute("DELETE FROM bronze.comtrade_raw WHERE query_side = %s AND period = %s", (query_side, period))
+        cur.execute(
+            f"DELETE FROM {table} WHERE query_side = %s AND period = %s", (query_side, period))
         execute_values(
             cur,
-            "INSERT INTO bronze.comtrade_raw (query_side, period, raw_record, ingested_at) VALUES %s",
-            [(query_side, period, json.dumps(r), ingested_at) for r in records],
+            f"INSERT INTO {table} (query_side, period, raw_record, ingested_at) VALUES %s",
+            [(query_side, period, json.dumps(r), ingested_at)
+             for r in records],
             page_size=1000,
         )
     conn.commit()
+
+
+def land_trade(conn, query_side: str, period: int, records: list[dict]):
+    _replace_slice(conn, "bronze.comtrade_raw", query_side, period, records)
+
+
+def land_product_trade(conn, query_side: str, period: int, records: list[dict]):
+    _replace_slice(conn, "bronze.comtrade_product_raw",
+                   query_side, period, records)
+
+
+def land_hs_reference(conn, records: list[dict]):
+    _replace_reference(conn, "HS reference",
+                       "bronze.comtrade_hs_raw", "cmd_code", "id", records)

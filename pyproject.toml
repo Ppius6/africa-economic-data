@@ -28,3 +28,9 @@ dagster-project = { workspace = true, editable = true }
 dev = [
     "pytest>=9.1.1",
 ]
+
+# The ingestion modules (wdi, comtrade, config, db) live in ingestion/, not in an
+# installed package, so pytest needs that folder on the import path.
+[tool.pytest.ini_options]
+pythonpath = ["ingestion"]
+testpaths = ["ingestion/tests"]
