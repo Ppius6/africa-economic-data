@@ -1,7 +1,7 @@
 {{
     config(
         materialized='table',
-        schema='gold',
+        schema='marts',
         engine='MergeTree()',
         order_by=['year', 'exporter_m49', 'importer_m49'],
         contract={'enforced': true}
@@ -22,4 +22,4 @@ select
     is_intra_african,
     cast(exporter_hs_edition as LowCardinality(Nullable(String))) as exporter_hs_edition,
     cast(importer_hs_edition as LowCardinality(Nullable(String))) as importer_hs_edition
-from {{ source('silver_bridge', 'int_comtrade_bilateral_flows') }}
+from {{ source('pg_bridge', 'int_comtrade_bilateral_flows') }}

@@ -1,8 +1,8 @@
--- One row per reporter x partner x flow x year, flattened from bronze's raw Comtrade records.
+-- One row per reporter x partner x flow x year, flattened from the raw Comtrade records.
 -- All products combined (HS TOTAL), aggregate rows only (no customs, transport or second-partner split).
 
 with source as (
-    select * from {{ source('bronze', 'comtrade_raw') }}
+    select * from {{ source('raw', 'comtrade_raw') }}
 ),
 
 flattened as (

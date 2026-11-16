@@ -1,4 +1,4 @@
-"""Runs the WDI ingestion: fetch from the API, land in bronze."""
+"""Runs the WDI ingestion: fetch from the API, land in the raw schema."""
 from config import AFRICA_ISO3
 from db import connect
 
@@ -6,7 +6,7 @@ from .client import WDIFetchError, fetch_indicator, get_country_metadata, get_in
 from .indicators import INDICATORS
 from .loader import (
     IncompleteLoadError,
-    ensure_bronze_table,
+    ensure_raw_tables,
     land_country_metadata,
     land_indicator,
     land_indicator_metadata,
@@ -14,7 +14,7 @@ from .loader import (
 
 
 def _refresh(conn, fetch, land) -> bool:
-    """Fetch and land one slice of bronze.
+    """Fetch and land one slice of the raw tables.
 
     If the API fails or the data is incomplete, the existing rows for that slice
     stay as they are and the run moves on to the next one.
@@ -37,7 +37,7 @@ def run():
     conn = connect()
     skipped = []
     try:
-        ensure_bronze_table(conn)
+        ensure_raw_tables(conn)
         print(f"Scope: {len(AFRICA_ISO3)} African countries (hardcoded list).")
 
         print("Fetching country metadata...")
@@ -63,7 +63,7 @@ def run():
 
     if skipped:
         raise RuntimeError(
-            f"Bronze not refreshed for {len(skipped)} of {len(INDICATORS) + 2}: {', '.join(skipped)}"
+            f"Raw tables not refreshed for {len(skipped)} of {len(INDICATORS) + 2}: {', '.join(skipped)}"
         )
     print("Done.")
 

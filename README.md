@@ -7,13 +7,13 @@ An end-to-end data engineering pipeline for 54 African countries, with two sourc
 
 Each source is its own pipeline, with its own Dagster job and schedule.
 
-The architecture uses PostgreSQL for the bronze and silver layers and ClickHouse for the gold layer. Instead of duplicating silver data into ClickHouse, the gold layer queries the silver layer through a live cross-database bridge, keeping the analytical layer current without an additional data-copy step.
+The architecture uses PostgreSQL for the raw, staging and core layers and ClickHouse for the marts. Instead of duplicating Postgres data into ClickHouse, the marts query staging and core through a live cross-database bridge, keeping the analytical layer current without an additional data-copy step.
 
 ## Tech stack
 
 - **Ingestion**: Python
-- **Transformation**: dbt-core (`dbt-postgres` for bronze/silver, `dbt-clickhouse` for gold)
-- **Warehouses**: Postgres (bronze, silver) and ClickHouse (gold), in Docker
+- **Transformation**: dbt-core (`dbt-postgres` for staging and core, `dbt-clickhouse` for the marts)
+- **Warehouses**: Postgres (raw, staging, core) and ClickHouse (marts), in Docker
 - **Orchestration**: Dagster
 - **BI**: Power BI
 
@@ -26,7 +26,7 @@ The architecture uses PostgreSQL for the bronze and silver layers and ClickHouse
 Column-level docs, lineage graph, and test coverage:
 **[ppius6.github.io/africa-economic-data](https://ppius6.github.io/africa-economic-data/)**
 
-Every gold mart carries an enforced dbt contract, so a schema change that doesn't match the declared column types fails the build.
+Every mart carries an enforced dbt contract, so a schema change that doesn't match the declared column types fails the build.
 
 ## Data scope
 
@@ -34,7 +34,7 @@ Every gold mart carries an enforced dbt contract, so a schema change that doesn'
 - **WDI**: 26 indicators covering growth, trade, demographics, labor, prices, health, education, infrastructure, and agriculture. Observations run from 1990 to the latest year WDI has published, with income classification history starting in 1987.
 - **Comtrade**: total goods trade (HS `TOTAL`) by partner, yearly from 1990. Recent years fill in as countries report, which can take two years or more.
 
-## Gold marts
+## Marts
 
 | Mart | Grain | Pipeline |
 |---|---|---|
@@ -47,12 +47,12 @@ Every gold mart carries an enforced dbt contract, so a schema change that doesn'
 
 ## Key design decisions
 
-- **Bronze is raw.** API responses land as untouched JSONB.
+- **Raw is untouched.** API responses land as JSONB in the `raw` schema. Each load replaces the previous copy, so history is kept in `core`, not here.
 - **Ingestion is idempotent.** Each run deletes and reinserts per indicator, so re-runs never leave duplicate or stale rows.
 - **History is kept.**
   - `dim_country` is an SCD2 dimension. A seed backfills the World Bank's income-classification history (1987 onward), and a dbt snapshot tracks changes from its first run. `dim_country` unions the two.
   - Indicator values are snapshotted too, so when the World Bank revises a figure, the old and new values both stay on record. The fact table reads only the current row.
-- **Gold reads silver through a live bridge.** ClickHouse's `PostgreSQL` table engine exposes silver as `silver_bridge.*`, and gold models read it via `source()`, since dbt can't `ref()` across adapters. No data is copied.
+- **The marts read Postgres through a live bridge.** ClickHouse's `PostgreSQL` table engine exposes staging and core as `pg_bridge.*`, and the mart models read it via `source()`, since dbt can't `ref()` across adapters. No data is copied.
 
 ### Comtrade
 
@@ -76,8 +76,8 @@ Every gold mart carries an enforced dbt contract, so a schema change that doesn'
 2. Open the Dagster UI at <http://localhost:3100>. To use another port, set `DAGSTER_PORT` in `.env`.
 
 3. Go to Overview → Jobs and launch a run of each pipeline:
-   - `wdi_refresh` builds WDI bronze, silver, then gold.
-   - `comtrade_refresh` does the same for Comtrade. Run `wdi_refresh` first, since Comtrade reads the country list from WDI's silver layer.
+   - `wdi_refresh` builds WDI raw, staging and core, then the marts.
+   - `comtrade_refresh` does the same for Comtrade. Run `wdi_refresh` first, since Comtrade reads the country list from WDI's staging layer.
 
 To stop: 
 
@@ -99,8 +99,8 @@ After changing anything, run `docker compose up -d --build`.
   ```bash
   cd ingestion && uv run python -m wdi.pipeline && uv run python -m comtrade.pipeline
   cd ../dbt_project
-  uv run dbt build --target dev --select tag:silver
-  uv run dbt build --target gold_clickhouse --select tag:gold
+  uv run dbt build --target dev --select tag:postgres
+  uv run dbt build --target clickhouse --select tag:clickhouse
   ```
 
 ## Future directions

@@ -46,10 +46,18 @@ models:
           - not_null
       - name: country_name
         data_type: String
-        description: Denormalized from dim_country for convenience.
+        description: The country's current name, denormalized from dim_country.
+        tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "!= ''"
       - name: region_name
         data_type: String
-        description: Denormalized from dim_country for convenience.
+        description: The country's current region, denormalized from dim_country.
+        tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "!= ''"
       - name: indicator_code
         data_type: String
         description: Join key to dim_indicator.
@@ -64,8 +72,11 @@ models:
         data_type: Nullable(Float64)
         description: The observed value. Frequently NULL for sparse indicators (GINI especially), since WDI coverage depends on irregular survey rounds.
       - name: income_level_at_time
-        data_type: String
-        description: The country's income bracket as it stood in this observation's year, not its current bracket. Already resolved via a temporal join against dim_country.
+        data_type: Nullable(String)
+        description: > 
+          The country's income bracket as it stood in this observation's year, not its current bracket. 
+          It is Null for years before the country's first classification: Djibouti in 1990, 
+          Eritrea from 1990 to 1992, and South Sudan from 1990 to 2011.
 
   - name: dim_country
     description: One row per country per income-classification period (SCD2), carrying the country's descriptive attributes (name, region, lending type, location) alongside the income level that held during valid_from–valid_to. Use is_current to get each country's present state.

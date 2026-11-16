@@ -2,7 +2,7 @@
 
 {{
     config(
-        target_schema='silver',
+        target_schema='core',
         unique_key='country_code',
         strategy='check',
         check_cols=['income_level_code', 'income_level_name']

@@ -8,13 +8,13 @@ world_economic_data:
       password: "{{ env_var('POSTGRES_PASSWORD') }}"
       port: "{{ env_var('INGESTION_DB_PORT', '5433') | as_number }}"
       dbname: "{{ env_var('POSTGRES_DB', 'worldbank') }}"
-      schema: bronze
+      schema: staging
       threads: 4
-    gold_clickhouse:
+    clickhouse:
       type: clickhouse
       host: "{{ env_var('CLICKHOUSE_HOST', 'localhost') }}"
       port: "{{ env_var('CLICKHOUSE_PORT', '8123') | as_number }}"
       user: "{{ env_var('CLICKHOUSE_USER') }}"
       password: "{{ env_var('CLICKHOUSE_PASSWORD') }}"
-      schema: gold
+      schema: marts
       threads: 4

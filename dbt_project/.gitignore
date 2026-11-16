@@ -8,3 +8,4 @@ logs/
 # tracked here — every credential in it is an env_var() reference, not a
 # real value, and CI/Dagster/anyone cloning the repo needs the file to exist.
 .user.yml
+dbt_internal_packages/

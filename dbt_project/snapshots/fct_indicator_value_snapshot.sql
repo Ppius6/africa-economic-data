@@ -2,7 +2,7 @@
 
 {{
     config(
-        target_schema='silver',
+        target_schema='core',
         unique_key=['country_code', 'indicator_code', 'year'],
         strategy='check',
         check_cols=['value']

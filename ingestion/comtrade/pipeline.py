@@ -1,4 +1,4 @@
-"""Runs the Comtrade ingestion: fetch from the API, land in bronze.
+"""Runs the Comtrade ingestion: fetch from the API, land in the raw schema.
 
 Usage:
     python -m comtrade.pipeline                  # START_YEAR to last year
@@ -23,7 +23,7 @@ from .loader import (
     PARTNER_SIDE,
     REPORTER_SIDE,
     IncompleteLoadError,
-    ensure_bronze_tables,
+    ensure_raw_tables,
     land_partner_areas,
     land_reporters,
     land_trade,
@@ -58,7 +58,7 @@ def run(years: range | None = None):
     conn = connect()
     skipped = []
     try:
-        ensure_bronze_tables(conn)
+        ensure_raw_tables(conn)
 
         print("Fetching Comtrade reporter reference...")
         reporters = []
@@ -96,7 +96,7 @@ def run(years: range | None = None):
 
     if skipped:
         raise RuntimeError(
-            f"Bronze not refreshed for {len(skipped)} slice(s): {', '.join(skipped)}")
+            f"Raw tables not refreshed for {len(skipped)} slice(s): {', '.join(skipped)}")
     print("Done.")
 
 

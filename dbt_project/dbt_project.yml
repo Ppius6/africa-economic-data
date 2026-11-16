@@ -1,4 +1,3 @@
-
 # Name your project! Project names should contain only lowercase characters
 # and underscores. A good package name should reflect your organization's
 # name or the intended use of these models
@@ -34,22 +33,24 @@ models:
     # Config indicated by + and applies to all files under models/example/
     staging:
       +materialized: view
-      +schema: silver
-      +tags: ['silver']
+      +schema: staging
+      +tags: ['postgres']
     intermediate:
       +materialized: table
-      +schema: silver
-      +tags: ['silver']
+      +schema: core
+      +tags: ['postgres']
     marts:
-      +materialized: table 
-      +schema: gold
-      +tags: ['gold']
+      +materialized: table
+      +schema: marts
+      +tags: ['clickhouse']
 
 seeds:
   dbt_project:
-    +schema: silver
-    +tags: ['silver']
+    +schema: core
+    +tags: ['postgres']
 
 snapshots:
   dbt_project:
-    +tags: ['silver']
+    +tags: ['postgres']
+flags:
+  require_generic_test_arguments_property: true

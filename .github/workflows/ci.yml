@@ -50,7 +50,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # Builds the real bronze -> silver -> snapshot -> gold schema against
+  # Builds the real raw -> staging -> core -> marts schema against
   # ephemeral, empty Postgres/ClickHouse service containers (structure only,
   # no real WDI data — ingestion never runs here) purely so dbt docs generate
   # can produce an accurate catalog.json (real column names/types), then
@@ -109,11 +109,11 @@ jobs:
           echo "ClickHouse did not become ready in time" >&2
           exit 1
 
-      # Bronze tables must exist before dbt's staging views can be created
+      # Raw tables must exist before dbt's staging views can be created
       # (CREATE VIEW needs the underlying table to exist), but ingestion
       # never runs here — no real WDI data lands in CI, just the correctly
-      # typed, empty tables ensure_bronze_table() already knows how to create.
-      - name: Create empty bronze tables
+      # typed, empty tables ensure_raw_tables() already knows how to create.
+      - name: Create empty raw tables
         working-directory: ingestion
         env:
           PGPASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
@@ -121,11 +121,11 @@ jobs:
           uv run --project .. python -c "
           import os
           import psycopg2
-          from wdi.loader import ensure_bronze_table
-          from comtrade.loader import ensure_bronze_tables as ensure_comtrade_bronze_tables
+          from wdi.loader import ensure_raw_tables as ensure_wdi_raw_tables
+          from comtrade.loader import ensure_raw_tables as ensure_comtrade_raw_tables
           conn = psycopg2.connect(host='localhost', port=5433, user='dev', password=os.environ['PGPASSWORD'], dbname='worldbank')
-          ensure_bronze_table(conn)
-          ensure_comtrade_bronze_tables(conn)
+          ensure_wdi_raw_tables(conn)
+          ensure_comtrade_raw_tables(conn)
           conn.close()
           "
 
@@ -150,18 +150,18 @@ jobs:
           DB_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
         run: bash infra/clickhouse/init.sh
 
-      - name: dbt build (bronze/silver, Postgres)
+      - name: dbt build (staging/core, Postgres)
         working-directory: dbt_project
-        run: uv run dbt build --profiles-dir . --target dev --select tag:silver
+        run: uv run dbt build --profiles-dir . --target dev --select tag:postgres
 
-      - name: dbt build (gold, ClickHouse)
+      - name: dbt build (marts, ClickHouse)
         working-directory: dbt_project
-        run: uv run dbt build --profiles-dir . --target gold_clickhouse --select tag:gold
+        run: uv run dbt build --profiles-dir . --target clickhouse --select tag:clickhouse
 
       # dbt docs generate only builds catalog.json (real column types) for
       # whichever single target/adapter it's pointed at — a lone run misses
-      # half this project's models, since bronze/silver live in Postgres and
-      # gold lives in ClickHouse. Generate against both and merge the two
+      # half this project's models, since raw/staging/core live in Postgres and
+      # the marts live in ClickHouse. Generate against both and merge the two
       # catalogs so every model gets real column data in the published docs.
       - name: dbt docs generate (Postgres layer)
         working-directory: dbt_project
@@ -172,7 +172,7 @@ jobs:
       - name: dbt docs generate (ClickHouse layer) + merge catalogs
         working-directory: dbt_project
         run: |
-          uv run dbt docs generate --profiles-dir . --target gold_clickhouse
+          uv run dbt docs generate --profiles-dir . --target clickhouse
           uv run python -c "
           import json
           pg = json.load(open('target/catalog_postgres.json'))

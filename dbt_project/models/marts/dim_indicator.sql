@@ -1,6 +1,6 @@
 {{ config(
     materialized='table',
-    schema='gold',
+    schema='marts',
     engine='MergeTree()',
     order_by=['indicator_code'],
     contract={'enforced': true}
@@ -12,4 +12,4 @@ select
     indicator_name,
     unit,
     category
-from {{ source('silver_bridge', 'stg_indicators') }}
+from {{ source('pg_bridge', 'stg_indicators') }}

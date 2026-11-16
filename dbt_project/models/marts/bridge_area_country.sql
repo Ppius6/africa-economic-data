@@ -1,7 +1,7 @@
 {{
     config(
         materialized='table',
-        schema='gold',
+        schema='marts',
         engine='MergeTree()',
         order_by=['m49_code', 'iso3'],
         contract={'enforced': true}

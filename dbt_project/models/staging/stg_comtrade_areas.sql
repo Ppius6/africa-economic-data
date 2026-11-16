@@ -9,7 +9,7 @@
 -- Namibia and Eswatini until 1999. It cannot be split by country, so it is its own in-scope area.
 
 with source as (
-    select * from {{ source('bronze', 'comtrade_partner_areas_raw') }}
+    select * from {{ source('raw', 'comtrade_partner_areas_raw') }}
 ),
 
 african_countries as (

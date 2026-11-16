@@ -1,14 +1,11 @@
 version: 2
 
 sources:
-  - name: bronze
-    schema: bronze
+  - name: raw
+    schema: raw
     tables:
       - name: country_raw
         description: Raw WDI country metadata, one row per country, landed as JSONB. Full-replace on every ingestion run.
-        meta:
-          dagster:
-            asset_key: ["wdi_country_raw"]
         columns:
           - name: country_code
             description: ISO3 country code.
@@ -18,11 +15,12 @@ sources:
             description: The complete, untouched WDI API response for this country. All parsing happens downstream in dbt, not here.
           - name: ingested_at
             description: Timestamp of the ingestion run that landed this row.
+        config:
+          meta:
+            dagster:
+              asset_key: ["wdi_country_raw"]
       - name: wdi_raw
         description: Raw WDI indicator data, one row per record returned by the API, landed as JSONB. Full-replace per indicator on every ingestion run.
-        meta:
-          dagster:
-            asset_key: ["wdi_wdi_raw"]
         columns:
           - name: indicator_code
             description: WDI indicator code.
@@ -32,13 +30,14 @@ sources:
             description: The complete, untouched WDI API response for this observation. All parsing happens downstream in dbt, not here.
           - name: ingested_at
             description: Timestamp of the ingestion run that landed this row.
+        config:
+          meta:
+            dagster:
+              asset_key: ["wdi_wdi_raw"]
       - name: comtrade_raw
         description: >
           Raw UN Comtrade annual trade records (HS TOTAL, aggregate rows only), landed as JSONB.
           Two pulls per year, told apart by query_side. Replaced per (query_side, period) slice.
-        meta:
-          dagster:
-            asset_key: ["comtrade_trade_raw"]
         columns:
           - name: query_side
             description: >
@@ -58,34 +57,37 @@ sources:
             description: The complete, untouched Comtrade API record. All parsing happens downstream in dbt.
           - name: ingested_at
             description: Timestamp of the ingestion run that landed this row.
+        config:
+          meta:
+            dagster:
+              asset_key: ["comtrade_trade_raw"]
       - name: comtrade_reporters_raw
         description: Comtrade's reporter reference (M49 code, ISO3, validity dates), one row per reporter code. Full-replace on every run.
-        meta:
-          dagster:
-            asset_key: ["comtrade_reporters_raw"]
         columns:
           - name: reporter_code
             description: M49 reporter code.
             tests:
               - not_null
+        config:
+          meta:
+            dagster:
+              asset_key: ["comtrade_reporters_raw"]
       - name: comtrade_partner_areas_raw
         description: >
           Comtrade's partner-area reference, one row per code. A superset of the reporters: it also has
           areas that never report, such as 'Areas, nes' (899) and 'Bunkers' (837). Full-replace on every run.
-        meta:
-          dagster:
-            asset_key: ["comtrade_partner_areas_raw"]
         columns:
           - name: partner_code
             description: M49 area code.
             tests:
               - unique
               - not_null
+        config:
+          meta:
+            dagster:
+              asset_key: ["comtrade_partner_areas_raw"]
       - name: indicator_raw
         description: Raw WDI indicator metadata (name, unit, topic), one row per indicator. Full-replace on every ingestion run.
-        meta:
-          dagster:
-            asset_key: ["wdi_indicator_raw"]
         columns:
           - name: indicator_code
             description: WDI indicator code.
@@ -95,3 +97,7 @@ sources:
             description: The complete, untouched WDI API response for this indicator. All parsing happens downstream in dbt, not here.
           - name: ingested_at
             description: Timestamp of the ingestion run that landed this row.
+        config:
+          meta:
+            dagster:
+              asset_key: ["wdi_indicator_raw"]

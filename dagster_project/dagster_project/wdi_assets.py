@@ -18,14 +18,14 @@ dbt_project = DbtProject(
 
 dbt_project.prepare_if_dev()
 
-_EXTRA_SILVER_DEPS = {
+_EXTRA_POSTGRES_DEPS = {
     "model.dbt_project.dim_country": [
-        AssetKey(["silver", "stg_countries"]),
-        AssetKey(["silver", "income_classification_history"]),
+        AssetKey(["staging", "stg_countries"]),
+        AssetKey(["core", "income_classification_history"]),
         AssetKey(["dim_country_snapshot"]),
     ],
     "model.dbt_project.dim_indicator": [
-        AssetKey(["silver", "stg_indicators"]),
+        AssetKey(["staging", "stg_indicators"]),
     ],
     "model.dbt_project.fct_economic_indicator": [
         AssetKey(["fct_indicator_value_snapshot"]),
@@ -36,7 +36,7 @@ _EXTRA_SILVER_DEPS = {
 class BridgeDbtTranslator(DagsterDbtTranslator):
     def get_asset_spec(self, manifest, unique_id, project):
         spec = super().get_asset_spec(manifest, unique_id, project)
-        extra_deps = _EXTRA_SILVER_DEPS.get(unique_id)
+        extra_deps = _EXTRA_POSTGRES_DEPS.get(unique_id)
         if extra_deps:
             spec = spec.merge_attributes(deps=extra_deps)
         return spec
@@ -72,7 +72,7 @@ def wdi_clickhouse_dbt_assets(
     dbt: DbtCliResource):
         
         yield from dbt.cli(
-            ["build", "--target", "gold_clickhouse"], 
+            ["build", "--target", "clickhouse"], 
             context=context
         ).stream()
 
@@ -92,10 +92,10 @@ from wdi.pipeline import run as run_wdi_ingestion  # noqa: E402
     group_name="wdi",
     can_subset=False,
 )
-def wdi_bronze(context: AssetExecutionContext):
+def wdi_raw_tables(context: AssetExecutionContext):
     """
     Fetch World Bank WDI observations and metadata into PostgreSQL
-    bronze.wdi_raw, bronze.country_raw, and bronze.indicator_raw.
+    raw.wdi_raw, raw.country_raw, and raw.indicator_raw.
     Replace metadata tables in full and observations per indicator.
     """
     run_wdi_ingestion()

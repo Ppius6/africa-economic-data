@@ -1,4 +1,4 @@
-"""This module lands raw Comtrade records and reference files in the Postgres bronze schema."""
+"""This module lands raw Comtrade records and reference files in the Postgres raw schema."""
 
 from datetime import datetime, timezone
 import json
@@ -9,7 +9,7 @@ from psycopg2.extras import execute_values
 REPORTER_SIDE = "reporter"   # the 54 countries' own reports, against every partner
 PARTNER_SIDE = "partner"     # every country's reports about the 54
 
-# A refreshed slice must keep at least this share of the rows already in bronze.
+# A refreshed slice must keep at least this share of the rows already in the raw table.
 # Comtrade has no fixed grid to check against (who reports changes by year), but a
 # year's record count normally only grows as late reports arrive, so a sharp drop
 # means the answer is incomplete, not that trade disappeared.
@@ -17,17 +17,17 @@ MIN_RETAINED_RATIO = 0.9
 
 
 class IncompleteLoadError(Exception):
-    """The fetched slice looks incomplete, so it must not replace what's in bronze."""
+    """The fetched slice looks incomplete, so it must not replace what's in the raw table."""
 
 
 def check_slice_size(label: str, new_count: int, previous_count: int) -> None:
-    """Raises IncompleteLoadError when a refreshed slice would shrink what is already in bronze.
+    """Raises IncompleteLoadError when a refreshed slice would shrink what is already in the raw table.
 
     The check only refuses when there is something to protect, so a first load of zero rows is allowed.
     """
     if previous_count and new_count == 0:
         raise IncompleteLoadError(
-            f"{label}: API returned 0 records; keeping the {previous_count} rows already in bronze"
+            f"{label}: API returned 0 records; keeping the {previous_count} rows already in the raw table"
         )
     if previous_count and new_count < previous_count * MIN_RETAINED_RATIO:
         raise IncompleteLoadError(
@@ -35,35 +35,35 @@ def check_slice_size(label: str, new_count: int, previous_count: int) -> None:
         )
 
 
-def ensure_bronze_tables(conn):
+def ensure_raw_tables(conn):
     with conn.cursor() as cur:
         cur.execute("""
-            CREATE SCHEMA IF NOT EXISTS bronze;
-            CREATE TABLE IF NOT EXISTS bronze.comtrade_raw (
+            CREATE SCHEMA IF NOT EXISTS raw;
+            CREATE TABLE IF NOT EXISTS raw.comtrade_raw (
                 query_side TEXT NOT NULL,
                 period INTEGER NOT NULL,
                 raw_record JSONB NOT NULL,
                 ingested_at TIMESTAMPTZ NOT NULL
             );
-            CREATE INDEX IF NOT EXISTS comtrade_raw_slice_idx ON bronze.comtrade_raw (query_side, period);
-            CREATE TABLE IF NOT EXISTS bronze.comtrade_reporters_raw (
+            CREATE INDEX IF NOT EXISTS comtrade_raw_slice_idx ON raw.comtrade_raw (query_side, period);
+            CREATE TABLE IF NOT EXISTS raw.comtrade_reporters_raw (
                 reporter_code INTEGER NOT NULL,
                 raw_record JSONB NOT NULL,
                 ingested_at TIMESTAMPTZ NOT NULL
             );
-            CREATE TABLE IF NOT EXISTS bronze.comtrade_partner_areas_raw (
+            CREATE TABLE IF NOT EXISTS raw.comtrade_partner_areas_raw (
                 partner_code INTEGER NOT NULL,
                 raw_record JSONB NOT NULL,
                 ingested_at TIMESTAMPTZ NOT NULL
             );
-            CREATE TABLE IF NOT EXISTS bronze.comtrade_product_raw (
+            CREATE TABLE IF NOT EXISTS raw.comtrade_product_raw (
                 query_side TEXT NOT NULL,
                 period INTEGER NOT NULL,
                 raw_record JSONB NOT NULL,
                 ingested_at TIMESTAMPTZ NOT NULL  
             );
-            CREATE INDEX IF NOT EXISTS comtrade_product_raw_slice_idx ON bronze.comtrade_product_raw (query_side, period);
-            CREATE TABLE IF NOT EXISTS bronze.comtrade_hs_raw (
+            CREATE INDEX IF NOT EXISTS comtrade_product_raw_slice_idx ON raw.comtrade_product_raw (query_side, period);
+            CREATE TABLE IF NOT EXISTS raw.comtrade_hs_raw (
                 cmd_code TEXT NOT NULL,
                 raw_record JSONB NOT NULL,
                 ingested_at TIMESTAMPTZ NOT NULL  
@@ -93,12 +93,12 @@ def _replace_reference(conn, label: str, table: str, code_column: str, code_fiel
 
 
 def land_reporters(conn, records: list[dict]):
-    _replace_reference(conn, "reporter reference", "bronze.comtrade_reporters_raw",
+    _replace_reference(conn, "reporter reference", "raw.comtrade_reporters_raw",
                        "reporter_code", "reporterCode", records)
 
 
 def land_partner_areas(conn, records: list[dict]):
-    _replace_reference(conn, "partner area reference", "bronze.comtrade_partner_areas_raw",
+    _replace_reference(conn, "partner area reference", "raw.comtrade_partner_areas_raw",
                        "partner_code", "PartnerCode", records)
 
 
@@ -129,14 +129,14 @@ def _replace_slice(conn, table: str, query_side: str, period: int, records: list
 
 
 def land_trade(conn, query_side: str, period: int, records: list[dict]):
-    _replace_slice(conn, "bronze.comtrade_raw", query_side, period, records)
+    _replace_slice(conn, "raw.comtrade_raw", query_side, period, records)
 
 
 def land_product_trade(conn, query_side: str, period: int, records: list[dict]):
-    _replace_slice(conn, "bronze.comtrade_product_raw",
+    _replace_slice(conn, "raw.comtrade_product_raw",
                    query_side, period, records)
 
 
 def land_hs_reference(conn, records: list[dict]):
     _replace_reference(conn, "HS reference",
-                       "bronze.comtrade_hs_raw", "cmd_code", "id", records)
+                       "raw.comtrade_hs_raw", "cmd_code", "id", records)

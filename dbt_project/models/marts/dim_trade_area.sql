@@ -1,7 +1,7 @@
 {{
     config(
         materialized='table',
-        schema='gold',
+        schema='marts',
         engine='MergeTree()',
         order_by=['m49_code'],
         contract={'enforced': true}
@@ -22,4 +22,4 @@ select
             if(iso3 is null, [], [assumeNotNull(iso3)]))
         as Array(LowCardinality(String))
     ) as member_iso3
-from {{ source('silver_bridge', 'stg_comtrade_areas') }}
+from {{ source('pg_bridge', 'stg_comtrade_areas') }}

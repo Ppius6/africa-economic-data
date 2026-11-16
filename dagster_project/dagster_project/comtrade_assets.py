@@ -18,19 +18,19 @@ dbt_project = DbtProject(
 
 dbt_project.prepare_if_dev()
 
-_EXTRA_SILVER_DEPS = {
+_EXTRA_POSTGRES_DEPS = {
     "model.dbt_project.dim_trade_area": [
-        AssetKey(["silver", "stg_comtrade_areas"]),
+        AssetKey(["staging", "stg_comtrade_areas"]),
     ],
     "model.dbt_project.fct_bilateral_trade": [
-        AssetKey(["silver", "int_comtrade_bilateral_flows"]),
+        AssetKey(["core", "int_comtrade_bilateral_flows"]),
     ],
 }
 
 class BridgeDbtTranslator(DagsterDbtTranslator):
     def get_asset_spec(self, manifest, unique_id, project):
         spec = super().get_asset_spec(manifest, unique_id, project)
-        extra_deps = _EXTRA_SILVER_DEPS.get(unique_id)
+        extra_deps = _EXTRA_POSTGRES_DEPS.get(unique_id)
         if extra_deps:
             spec = spec.merge_attributes(deps=extra_deps)
         return spec
@@ -67,7 +67,7 @@ def comtrade_clickhouse_dbt_assets(
     ):
         
         yield from dbt.cli(
-            ["build", "--target", "gold_clickhouse"], 
+            ["build", "--target", "clickhouse"], 
             context=context
         ).stream()
 
@@ -87,11 +87,11 @@ from comtrade.pipeline import run as run_comtrade_ingestion  # noqa: E402
     group_name="comtrade",
     can_subset=False,
 )
-def comtrade_bronze(context: AssetExecutionContext):
+def comtrade_raw_tables(context: AssetExecutionContext):
     """
     Fetch UN Comtrade annual trade data and reference data into PostgreSQL
-    bronze.comtrade_raw, bronze.comtrade_reporters_raw, and
-    bronze.comtrade_partner_areas_raw. Replace reference tables in full
+    raw.comtrade_raw, raw.comtrade_reporters_raw, and
+    raw.comtrade_partner_areas_raw. Replace reference tables in full
     and trade rows per query side and year.
     """
     run_comtrade_ingestion()

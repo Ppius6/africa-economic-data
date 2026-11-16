@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: stg_countries
-    description: One row per African country with flattened region, income level, and location metadata, unpacked from bronze's raw JSONB.
+    description: One row per African country with flattened region, income level, and location metadata, unpacked from the JSONB in the raw schema.
     config:
       meta:
         dagster:
@@ -38,10 +38,10 @@ models:
       - name: latitude
         description: Capital city latitude.
       - name: ingested_at
-        description: Timestamp of the ingestion run that landed this row's underlying bronze data.
+        description: Timestamp of the ingestion run that landed this row's underlying raw data.
 
   - name: stg_indicators
-    description: One row per WDI indicator with a curated category grouping, unpacked from bronze's raw JSONB.
+    description: One row per WDI indicator with a curated category grouping, unpacked from the JSONB in the raw schema.
     config:
       meta:
         dagster:
@@ -83,7 +83,7 @@ models:
       - name: value
         description: The observed value. Frequently NULL for sparse indicators.
       - name: ingested_at
-        description: Timestamp of the ingestion run that landed this row's underlying bronze data.
+        description: Timestamp of the ingestion run that landed this row's underlying raw data.
     tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -132,7 +132,7 @@ models:
 
   - name: stg_comtrade_trade
     description: >
-      One row per reporter x partner x flow x year (HS TOTAL), flattened from bronze. Records that
+      One row per reporter x partner x flow x year (HS TOTAL), flattened from raw.comtrade_raw. Records that
       came back from both pulls are kept once.
     config:
       meta:

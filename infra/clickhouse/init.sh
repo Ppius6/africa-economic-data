@@ -1,11 +1,11 @@
 #!/bin/bash
 set -e
 
-clickhouse-client --query "CREATE DATABASE IF NOT EXISTS gold"
-clickhouse-client --query "CREATE DATABASE IF NOT EXISTS silver_bridge"
+clickhouse-client --query "CREATE DATABASE IF NOT EXISTS marts"
+clickhouse-client --query "CREATE DATABASE IF NOT EXISTS pg_bridge"
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver_bridge.stg_countries
+CREATE TABLE IF NOT EXISTS pg_bridge.stg_countries
 (
     country_code String,
     country_name String,
@@ -20,24 +20,11 @@ CREATE TABLE IF NOT EXISTS silver_bridge.stg_countries
     latitude Nullable(Float64),
     ingested_at DateTime64(6)
 )
-ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_countries', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_countries', '${DB_USER}', '${DB_PASSWORD}', 'staging')
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver_bridge.stg_wdi_indicators
-(
-    country_code String,
-    indicator_code String,
-    indicator_name String,
-    year Int32,
-    value Nullable(Float64),
-    ingested_at DateTime64(6)
-)
-ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_wdi_indicators', '${DB_USER}', '${DB_PASSWORD}', 'silver')
-"
-
-clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver_bridge.dim_country_snapshot
+CREATE TABLE IF NOT EXISTS pg_bridge.dim_country_snapshot
 (
     country_code String,
     country_name String,
@@ -55,33 +42,33 @@ CREATE TABLE IF NOT EXISTS silver_bridge.dim_country_snapshot
     dbt_valid_from DateTime64(6),
     dbt_valid_to Nullable(DateTime64(6))
 )
-ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'dim_country_snapshot', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'dim_country_snapshot', '${DB_USER}', '${DB_PASSWORD}', 'core')
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver_bridge.income_classification_history
+CREATE TABLE IF NOT EXISTS pg_bridge.income_classification_history
 (
     country_code String,
     income_level_name String,
     valid_from Date,
     valid_to Date
 )
-ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'income_classification_history', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'income_classification_history', '${DB_USER}', '${DB_PASSWORD}', 'core')
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver_bridge.stg_indicators
+CREATE TABLE IF NOT EXISTS pg_bridge.stg_indicators
 (
     indicator_code String,
     indicator_name Nullable(String),
     unit Nullable(String),
     category Nullable(String)
 )
-ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_indicators', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_indicators', '${DB_USER}', '${DB_PASSWORD}', 'staging')
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver_bridge.fct_indicator_value_snapshot
+CREATE TABLE IF NOT EXISTS pg_bridge.fct_indicator_value_snapshot
 (
     country_code String,
     indicator_code String,
@@ -92,11 +79,11 @@ CREATE TABLE IF NOT EXISTS silver_bridge.fct_indicator_value_snapshot
     dbt_valid_from DateTime64(6),
     dbt_valid_to Nullable(DateTime64(6))
 )
-ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'fct_indicator_value_snapshot', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'fct_indicator_value_snapshot', '${DB_USER}', '${DB_PASSWORD}', 'core')
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver_bridge.stg_comtrade_areas
+CREATE TABLE IF NOT EXISTS pg_bridge.stg_comtrade_areas
 (
     m49_code Int32,
     area_name String,
@@ -107,11 +94,11 @@ CREATE TABLE IF NOT EXISTS silver_bridge.stg_comtrade_areas
     valid_to Nullable(Date32),
     ingested_at DateTime64(6)
 )
-ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_comtrade_areas', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_comtrade_areas', '${DB_USER}', '${DB_PASSWORD}', 'staging')
 "
 
 clickhouse-client --query "
-CREATE TABLE IF NOT EXISTS silver_bridge.int_comtrade_bilateral_flows
+CREATE TABLE IF NOT EXISTS pg_bridge.int_comtrade_bilateral_flows
 (
     year Int32,
     exporter_m49 Int32,
@@ -132,7 +119,7 @@ CREATE TABLE IF NOT EXISTS silver_bridge.int_comtrade_bilateral_flows
     exporter_hs_edition Nullable(String),
     importer_hs_edition Nullable(String)
 )
-ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'int_comtrade_bilateral_flows', '${DB_USER}', '${DB_PASSWORD}', 'silver')
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'int_comtrade_bilateral_flows', '${DB_USER}', '${DB_PASSWORD}', 'core')
 "
 
 echo "ClickHouse init complete."

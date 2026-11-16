@@ -1,6 +1,6 @@
 with source as (
     select *
-    from {{ source('bronze', 'indicator_raw') }}
+    from {{ source('raw', 'indicator_raw') }}
 ),
 
 first_topic as (

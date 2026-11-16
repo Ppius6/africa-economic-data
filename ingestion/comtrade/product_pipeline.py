@@ -1,4 +1,4 @@
-"""This module runs the Comtrade HS-chapter ingestion: it fetches trade by product from the API and lands it in bronze.
+"""This module runs the Comtrade HS-chapter ingestion: it fetches trade by product from the API and lands it in the raw schema.
 
 Usage:
     python -m comtrade.product_pipeline              # This refreshes the last five complete years, never before 2000.
@@ -21,7 +21,7 @@ from .client import (
 from .loader import (
     PARTNER_SIDE,
     REPORTER_SIDE,
-    ensure_bronze_tables,
+    ensure_raw_tables,
     land_hs_reference,
     land_product_trade,
 )
@@ -47,7 +47,7 @@ def run(years: range | None = None):
     conn = connect()
     skipped = []
     try:
-        ensure_bronze_tables(conn)
+        ensure_raw_tables(conn)
 
         print("Fetching Comtrade reporter and HS reference...")
         reporters = get_reporters()
@@ -93,7 +93,7 @@ def run(years: range | None = None):
 
     if skipped:
         raise RuntimeError(
-            f"Product Bronze not refreshed for {len(skipped)} slice(s): {', '.join(skipped)}")
+            f"Product raw tables not refreshed for {len(skipped)} slice(s): {', '.join(skipped)}")
     print("Done.")
 
 
