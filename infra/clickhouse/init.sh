@@ -122,4 +122,37 @@ CREATE TABLE IF NOT EXISTS pg_bridge.int_comtrade_bilateral_flows
 ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'int_comtrade_bilateral_flows', '${DB_USER}', '${DB_PASSWORD}', 'core')
 "
 
+clickhouse-client --query "
+CREATE TABLE IF NOT EXISTS pg_bridge.stg_comtrade_hs
+(
+    hs_code String,
+    hs_description String,
+    aggr_level Int32,
+    parent_hs_code Nullable(String),
+    is_leaf Bool,
+    ingested_at DateTime64(6)
+)
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'stg_comtrade_hs', '${DB_USER}', '${DB_PASSWORD}', 'staging')
+"
+
+clickhouse-client --query "
+CREATE TABLE IF NOT EXISTS pg_bridge.int_comtrade_product_flows
+(
+    year Int32,
+    exporter_m49 Int32,
+    importer_m49 Int32,
+    hs_chapter String,
+    exporter_reported_usd Nullable(Float64),
+    importer_reported_usd Nullable(Float64),
+    importer_value_basis Nullable(String),
+    reported_by String,
+    exporter_in_scope Bool,
+    importer_in_scope Bool,
+    is_intra_african Bool,
+    exporter_hs_edition Nullable(String),
+    importer_hs_edition Nullable(String)
+)
+ENGINE = PostgreSQL('${DB_HOST}:${DB_PORT}', '${DB_NAME}', 'int_comtrade_product_flows', '${DB_USER}', '${DB_PASSWORD}', 'core')
+"
+
 echo "ClickHouse init complete."

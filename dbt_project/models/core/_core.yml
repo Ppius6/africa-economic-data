@@ -56,3 +56,62 @@ models:
       - dbt_utils.expression_is_true:
           arguments:
             expression: "exporter_in_scope or importer_in_scope"
+  - name: int_comtrade_product_flows
+    description: >
+      One row per year x exporter x importer x HS chapter (2000 onwards) with both ends' reported figures
+      side by side, paired the same way as int_comtrade_bilateral_flows. Codes only: join exporter_m49 and
+      importer_m49 to stg_comtrade_areas, and hs_chapter to stg_comtrade_hs, for names.
+    config:
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: year
+        tests:
+          - not_null
+      - name: exporter_m49
+        tests:
+          - not_null
+      - name: importer_m49
+        tests:
+          - not_null
+      - name: hs_chapter
+        description: 2-digit HS chapter.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_comtrade_hs')
+                field: hs_code
+      - name: exporter_reported_usd
+        description: Exports as reported by the exporter (FOB, US$). NULL if the exporter didn't report this flow.
+      - name: importer_reported_usd
+        description: Imports as reported by the importer (usually CIF, US$). NULL if the importer didn't report this flow.
+      - name: importer_value_basis
+        description: "'CIF' or 'FOB': which valuation the importer's figure uses. NULL when it matches neither stated value."
+      - name: reported_by
+        description: "'both', 'exporter_only' or 'importer_only'."
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['both', 'exporter_only', 'importer_only']
+      - name: exporter_in_scope
+        description: True when the exporter is one of the in-scope African countries.
+      - name: importer_in_scope
+        description: True when the importer is one of the in-scope African countries.
+      - name: is_intra_african
+        description: True when both ends are in scope.
+      - name: exporter_hs_edition
+      - name: importer_hs_edition
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - year
+              - exporter_m49
+              - importer_m49
+              - hs_chapter
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "exporter_in_scope or importer_in_scope"

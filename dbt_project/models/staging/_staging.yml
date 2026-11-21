@@ -188,3 +188,101 @@ models:
               - reporter_m49
               - partner_m49
               - flow_code
+  - name: stg_comtrade_hs
+    description: >
+      One row per HS code at every level, flattened from raw.comtrade_hs_raw. Filter on aggr_level = 2
+      for the chapters that stg_comtrade_product_trade uses.
+    config:
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: hs_code
+        description: HS code (2, 4 or 6 digits), or TOTAL for all products.
+        tests:
+          - unique
+          - not_null
+      - name: hs_description
+        description: The code's description, without the leading code. H6 (2022) edition wording.
+        tests:
+          - not_null
+      - name: aggr_level
+        description: Number of digits in the code; 0 for TOTAL.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0, 2, 4, 6]
+                quote: false
+      - name: parent_hs_code
+        description: The code one level up (a chapter's parent is TOTAL). Null for TOTAL.
+      - name: is_leaf
+        description: True for codes with nothing below them, which is every 6-digit subheading plus heading 0509 (natural sponges).
+        
+  - name: stg_comtrade_product_trade
+    description: >
+      One row per reporter x partner x flow x HS chapter x year, 2000 onwards, flattened from
+      raw.comtrade_product_raw. Records that came back from both pulls are kept once.
+    config:
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: year
+        tests:
+          - not_null
+      - name: reporter_m49
+        description: Reporting area's M49 code.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_comtrade_areas')
+                field: m49_code
+      - name: partner_m49
+        description: Partner area's M49 code. 0 means World (the reporter's total).
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_comtrade_areas')
+                field: m49_code
+      - name: flow_code
+        description: X = exports, M = imports, as stated by the reporter.
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['X', 'M']
+      - name: hs_chapter
+        description: 2-digit HS chapter, e.g. '27' for mineral fuels.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_comtrade_hs')
+                field: hs_code
+      - name: trade_value_usd
+        description: Comtrade's primary value in US$. Exports are FOB; imports are usually CIF.
+        tests:
+          - not_null
+      - name: cif_value_usd
+        description: Value including freight and insurance, where reported.
+      - name: fob_value_usd
+        description: Value at the exporter's border, where reported.
+      - name: net_weight_kg
+        description: Net weight in kilograms, where reported.
+      - name: hs_edition
+        description: Edition of the HS product codes the reporter used (H0 = 1992 ... H6 = 2022).
+      - name: is_reported
+        description: Comtrade's isReported flag, kept as delivered.
+      - name: legacy_estimation_flag
+        description: Comtrade's legacyEstimationFlag, kept as delivered.
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - year
+              - reporter_m49
+              - partner_m49
+              - flow_code
+              - hs_chapter

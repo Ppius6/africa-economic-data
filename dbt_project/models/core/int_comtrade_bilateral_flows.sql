@@ -1,76 +1,84 @@
--- One row per year x exporter x importer, holding both ends' reported figures side by side:
--- what the exporter reported as exports to the importer, and what the importer reported as
--- imports from the exporter. Either can be missing. Choosing between them is left to a later model.
+-- One row per year x exporter x importer, holding both ends' reported figures side by
+-- side:
+-- what the exporter reported as exports to the importer, and what the importer
+-- reported as
+-- imports from the exporter. Either can be missing. Choosing between them is left to
+-- a later model.
 --
--- Valuation differs by end: exports are valued at the exporter's border (FOB); imports usually
--- include freight and insurance (CIF), so importer figures normally run a few percent higher.
+-- Valuation differs by end: exports are valued at the exporter's border (FOB);
+-- imports usually
+-- include freight and insurance (CIF), so importer figures normally run a few percent
+-- higher.
+{{ config(materialized="table") }}
 
-{{ config(materialized='table') }}
+with
+    trade as (
+        select * from {{ ref("stg_comtrade_trade") }} where partner_m49 <> 0  -- drop reporter totals to World; they are not a bilateral flow
+    ),
 
-with trade as (
-    select * from {{ ref('stg_comtrade_trade') }}
-    where partner_m49 <> 0   -- drop reporter totals to World; they are not a bilateral flow
-),
+    exports as (
+        select
+            year,
+            reporter_m49 as exporter_m49,
+            partner_m49 as importer_m49,
+            trade_value_usd as exporter_reported_usd,
+            hs_edition as exporter_hs_edition
+        from trade
+        where flow_code = 'X'
+    ),
 
-exports as (
-    select
-        year,
-        reporter_m49 as exporter_m49,
-        partner_m49 as importer_m49,
-        trade_value_usd as exporter_reported_usd,
-        hs_edition as exporter_hs_edition
-    from trade
-    where flow_code = 'X'
-),
+    imports as (
+        select
+            year,
+            partner_m49 as exporter_m49,
+            reporter_m49 as importer_m49,
+            trade_value_usd as importer_reported_usd,
+            case
+                when trade_value_usd = cif_value_usd
+                then 'CIF'
+                when trade_value_usd = fob_value_usd
+                then 'FOB'
+            end as importer_value_basis,
+            hs_edition as importer_hs_edition
+        from trade
+        where flow_code = 'M'
+    ),
 
-imports as (
-    select
-        year,
-        partner_m49 as exporter_m49,
-        reporter_m49 as importer_m49,
-        trade_value_usd as importer_reported_usd,
-        case
-            when trade_value_usd = cif_value_usd then 'CIF'
-            when trade_value_usd = fob_value_usd then 'FOB'
-        end as importer_value_basis,
-        hs_edition as importer_hs_edition
-    from trade
-    where flow_code = 'M'
-),
+    imports_and_exports as (
+        select *
+        from exports
+        full outer join imports using (year, exporter_m49, importer_m49)
+    ),
 
-pairs as (
-    select *
-    from exports
-    full outer join imports using (year, exporter_m49, importer_m49)
-),
-
-areas as (
-    select * from {{ ref('stg_comtrade_areas') }}
-)
+    areas as (select * from {{ ref("stg_comtrade_areas") }})
 
 select
-    p.year,
-    p.exporter_m49,
+    ie.year,
+    ie.exporter_m49,
     ex.iso3 as exporter_iso3,
     ex.area_name as exporter_name,
     ex.area_type as exporter_area_type,
     ex.is_in_scope as exporter_in_scope,
-    p.importer_m49,
+    ie.importer_m49,
     im.iso3 as importer_iso3,
     im.area_name as importer_name,
     im.area_type as importer_area_type,
     im.is_in_scope as importer_in_scope,
-    p.exporter_reported_usd,
-    p.importer_reported_usd,
-    p.importer_value_basis,
+    ie.exporter_reported_usd,
+    ie.importer_reported_usd,
+    ie.importer_value_basis,
     case
-        when p.exporter_reported_usd is not null and p.importer_reported_usd is not null then 'both'
-        when p.exporter_reported_usd is not null then 'exporter_only'
+        when
+            ie.exporter_reported_usd is not null
+            and ie.importer_reported_usd is not null
+        then 'both'
+        when ie.exporter_reported_usd is not null
+        then 'exporter_only'
         else 'importer_only'
     end as reported_by,
     (ex.is_in_scope and im.is_in_scope) as is_intra_african,
-    p.exporter_hs_edition,
-    p.importer_hs_edition
-from pairs p
-left join areas ex on ex.m49_code = p.exporter_m49
-left join areas im on im.m49_code = p.importer_m49
+    ie.exporter_hs_edition,
+    ie.importer_hs_edition
+from imports_and_exports ie
+left join areas ex on ex.m49_code = ie.exporter_m49
+left join areas im on im.m49_code = ie.importer_m49

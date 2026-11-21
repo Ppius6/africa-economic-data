@@ -27,6 +27,7 @@ dagster-project = { workspace = true, editable = true }
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "shandy-sqlfmt[jinjafmt]>=0.32.0",
 ]
 
 # The ingestion modules (wdi, comtrade, config, db) live in ingestion/, not in an

@@ -257,3 +257,89 @@ models:
       - dbt_utils.unique_combination_of_columns:
           arguments:
             combination_of_columns: [year, exporter_m49, importer_m49]
+
+  - name: dim_hs_chapter
+    description: One row per 2-digit HS chapter with its WCO section. Dimension for fct_bilateral_product_trade.hs_chapter.
+    config:
+      contract:
+        enforced: true
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: hs_chapter
+        data_type: String
+        description: 2-digit HS chapter, e.g. '27'. Join key from fct_bilateral_product_trade.hs_chapter.
+        tests: [unique, not_null]
+      - name: chapter_description
+        data_type: String
+        description: Chapter description, H6 (2022) edition wording.
+      - name: section_number
+        data_type: UInt8
+        description: WCO section number, 1 to 21. 99 for Comtrade's chapter 99 (not specified), which sits outside the sections.
+        tests: [not_null]
+      - name: section_code
+        data_type: String
+        description: Section in Roman numerals, as the WCO writes it ('n/a' for chapter 99).
+      - name: section_name
+        data_type: String
+
+  - name: fct_bilateral_product_trade
+    description: >
+      One row per year x exporter x importer x HS chapter (2000 onwards) with both ends' reported trade values.
+      No figure is preferred yet. Summed over chapters, it matches fct_bilateral_trade for the same pair.
+    config:
+      contract:
+        enforced: true
+      meta:
+        dagster:
+          group: comtrade
+    columns:
+      - name: year
+        data_type: Int32
+        tests: [not_null]
+      - name: exporter_m49
+        data_type: Int32
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_trade_area')
+                field: m49_code
+      - name: importer_m49
+        data_type: Int32
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_trade_area')
+                field: m49_code
+      - name: hs_chapter
+        data_type: LowCardinality(String)
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_hs_chapter')
+                field: hs_chapter
+      - name: exporter_reported_usd
+        data_type: Nullable(Float64)
+        description: Exports as the exporter reported them (FOB, US$). NULL if the exporter did not report this flow.
+      - name: importer_reported_usd
+        data_type: Nullable(Float64)
+        description: Imports as the importer reported them (usually CIF, US$). NULL if the importer did not report this flow.
+      - name: importer_value_basis
+        data_type: LowCardinality(Nullable(String))
+      - name: reported_by
+        data_type: LowCardinality(String)
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['both', 'exporter_only', 'importer_only']
+      - name: is_intra_african
+        data_type: Bool
+      - name: exporter_hs_edition
+        data_type: LowCardinality(Nullable(String))
+      - name: importer_hs_edition
+        data_type: LowCardinality(Nullable(String))
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [year, exporter_m49, importer_m49, hs_chapter]

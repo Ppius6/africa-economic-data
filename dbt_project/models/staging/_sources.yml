@@ -101,3 +101,50 @@ sources:
           meta:
             dagster:
               asset_key: ["wdi_indicator_raw"]
+      
+      - name: comtrade_product_raw
+        description: >
+          Raw UN Comtrade annual trade records by HS chapter (2-digit), 2000 onwards, landed as JSONB.
+          Two pulls per year, told apart by query_side, the same way as comtrade_raw. Replaced per
+          (query_side, period) slice.
+        columns:
+          - name: query_side
+            description: >
+              'reporter' for the in-scope countries' own reports against every partner;
+              'partner' for every country's reports about the in-scope countries.
+              A record between two in-scope areas appears once in each.
+            tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values: ['reporter', 'partner']
+          - name: period
+            description: Year of the trade.
+            tests:
+              - not_null
+          - name: raw_record
+            description: The untouched Comtrade API record.
+          - name: ingested_at
+            description: Timestamp of the ingestion run that landed this row.
+        config: 
+          meta:
+            dagster:
+              asset_key: ["comtrade_product_raw"]
+      - name: comtrade_hs_raw
+        description: >
+          Comtrade's HS product reference (H6 edition), one row per code at every level: TOTAL,
+          chapters (2-digit), headings (4-digit) and subheadings (6-digit) fully replaced on every run.
+        columns:
+          - name: cmd_code
+            description: HS code, or TOTAL for all products
+            tests:
+              - unique
+              - not_null
+          - name: raw_record
+            description: The untouched Comtrade reference record.
+          - name: ingested_at
+            description: Timestamp of the ingestion run that landed this row.
+        config:
+          meta:
+            dagster:
+              asset_key: ["comtrade_hs_raw"]
